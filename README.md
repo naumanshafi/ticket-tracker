@@ -20,13 +20,6 @@
 
 This is a comprehensive ticket tracking system built with modern technologies, featuring a **React frontend** and **FastAPI backend**. It demonstrates real-world application architecture with proper authentication, role-based access control, and a professional user interface.
 
-### 🎯 Perfect for:
-- **Learning full-stack development** with React and FastAPI
-- **Understanding project management workflows**
-- **Studying modern authentication patterns** (JWT + Google OAuth)
-- **Exploring role-based access control** systems
-- **Building portfolio projects** with production-ready code
-
 ## 🚀 Features
 
 ### 👥 **User Management & Authentication**
