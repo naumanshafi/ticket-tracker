@@ -40,6 +40,12 @@
 **/*.swo
 **/*~
 
+# Configuration files (removed from project)
+**/.eslintrc*
+**/.prettierrc*
+**/.babelrc*
+**/jsconfig.json
+
 # OS generated files
 **/.DS_Store
 **/.DS_Store?

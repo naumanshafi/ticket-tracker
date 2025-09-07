@@ -15,9 +15,7 @@
     "dev:api": "cd api && source venv/bin/activate && python main.py",
     "dev:client": "cd client && npm start",
     "build": "cd client && npm run build",
-    "test": "cd client && npm test",
-    "lint": "cd client && npm run lint",
-    "format": "cd client && npm run format"
+    "test": "cd client && npm test"
   },
   "devDependencies": {
     "concurrently": "^7.6.0"
