@@ -59,11 +59,11 @@ async def global_exception_handler(request: Request, exc: Exception):
 def get_db_connection():
     """Create a database connection"""
     return psycopg2.connect(
-        host=os.getenv('DB_HOST', 'localhost'),
-        port=os.getenv('DB_PORT', '5432'),
-        database=os.getenv('DB_DATABASE', 'jira_development'),
-        user=os.getenv('DB_USERNAME', 'postgres'),
-        password=os.getenv('DB_PASSWORD', '123456'),
+        host=os.getenv('DB_HOST'),
+        port=os.getenv('DB_PORT'),
+        database=os.getenv('DB_DATABASE'),
+        user=os.getenv('DB_USERNAME'),
+        password=os.getenv('DB_PASSWORD'),
         cursor_factory=RealDictCursor
     )
 
