@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 
 import { Image, Letter } from './Styles';
@@ -18,6 +18,7 @@ const defaultProps = {
 };
 
 const Avatar = ({ className, avatarUrl, name, size, ...otherProps }) => {
+  const [imageError, setImageError] = useState(false);
   const sharedProps = {
     className,
     size,
@@ -25,13 +26,15 @@ const Avatar = ({ className, avatarUrl, name, size, ...otherProps }) => {
     ...otherProps,
   };
 
-  if (avatarUrl) {
-    return <Image avatarUrl={avatarUrl} {...sharedProps} />;
+  const validAvatarUrl = avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined' && !imageError;
+
+  if (validAvatarUrl) {
+    return <Image src={avatarUrl} onError={() => setImageError(true)} {...sharedProps} />;
   }
 
   return (
     <Letter color={getColorFromName(name)} {...sharedProps}>
-      <span>{name.charAt(0)}</span>
+      <span>{name ? name.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase() : '?'}</span>
     </Letter>
   );
 };

@@ -1,12 +1,90 @@
-# dependencies
-**/node_modules
+# Dependencies
+**/node_modules/
+**/venv/
+**/__pycache__/
+**/pip-log.txt
+**/pip-delete-this-directory.txt
 
-# misc
-**/.DS_Store
-
-# environment config
+# Environment variables
 **/.env
+**/.env.local
+**/.env.development.local
+**/.env.test.local
+**/.env.production.local
 
-# production
-**/build
+# Production builds
+**/build/
+**/dist/
+
+# Logs
 **/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/lerna-debug.log*
+**/*.log
+
+# Runtime data
+**/pids
+**/*.pid
+**/*.seed
+**/*.pid.lock
+
+# Coverage directory used by tools like istanbul
+**/coverage/
+**/.nyc_output
+
+# IDE and Editor files
+**/.vscode/
+**/.idea/
+**/*.swp
+**/*.swo
+**/*~
+
+# OS generated files
+**/.DS_Store
+**/.DS_Store?
+**/._*
+**/.Spotlight-V100
+**/.Trashes
+**/ehthumbs.db
+**/Thumbs.db
+
+# Python specific
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/__pycache__/
+**/.pytest_cache/
+**/.coverage
+**/htmlcov/
+**/.tox/
+**/.cache
+**/nosetests.xml
+**/coverage.xml
+**/*.cover
+**/.hypothesis/
+
+# Database
+**/*.db
+**/*.sqlite
+**/*.sqlite3
+
+# Temporary files
+**/tmp/
+**/temp/
+
+# Package files
+**/*.tgz
+**/*.tar.gz
+
+# Optional npm cache directory
+**/.npm
+
+# Optional eslint cache
+**/.eslintcache
+
+# Webpack
+**/.cache/
+
+# Parcel
+**/.parcel-cache/

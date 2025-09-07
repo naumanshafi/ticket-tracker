@@ -6,7 +6,7 @@ import { objectToQueryString } from 'shared/utils/url';
 import { getStoredAuthToken, removeStoredAuthToken } from 'shared/utils/authToken';
 
 const defaults = {
-  baseURL: process.env.API_URL || 'http://localhost:3000',
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000',
   headers: () => ({
     'Content-Type': 'application/json',
     Authorization: getStoredAuthToken() ? `Bearer ${getStoredAuthToken()}` : undefined,
@@ -34,12 +34,17 @@ const api = (method, url, variables) =>
       },
       error => {
         if (error.response) {
-          if (error.response.data.error.code === 'INVALID_TOKEN') {
-            removeStoredAuthToken();
-            history.push('/authenticate');
-          } else {
-            reject(error.response.data.error);
-          }
+        if (error.response.data.error?.code === 'INVALID_TOKEN') {
+          removeStoredAuthToken();
+          history.push('/authenticate');
+        } else if (error.response.data.detail) {
+          // Handle FastAPI error format
+          reject({ message: error.response.data.detail, status: error.response.status });
+        } else if (error.response.data.error) {
+          reject(error.response.data.error);
+        } else {
+          reject({ message: error.response.data.message || 'An error occurred', status: error.response.status });
+        }
         } else {
           reject(defaults.error);
         }
@@ -50,7 +55,11 @@ const api = (method, url, variables) =>
 const optimisticUpdate = async (url, { updatedFields, currentFields, setLocalData }) => {
   try {
     setLocalData(updatedFields);
-    await api('put', url, updatedFields);
+    const response = await api('put', url, updatedFields);
+    // Update with the actual server response to ensure consistency
+    if (response) {
+      setLocalData(response);
+    }
   } catch (error) {
     setLocalData(currentFields);
     toast.error(error);

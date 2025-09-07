@@ -14,6 +14,8 @@ export const Sidebar = styled.div`
   border-right: 1px solid ${color.borderLightest};
   ${mixin.scrollableY}
   ${mixin.customScrollbar()}
+  display: flex;
+  flex-direction: column;
   @media (max-width: 1100px) {
     width: ${sizes.secondarySideBarWidth - 10}px;
   }

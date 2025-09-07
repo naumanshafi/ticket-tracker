@@ -1,21 +1,29 @@
 {
-  "name": "jira_clone",
+  "name": "tooling-ticket-tracker",
   "version": "1.0.0",
-  "author": "Ivor Reic",
+  "description": "A modern, full-featured ticket tracking and project management application",
+  "author": "Nauman Shafi",
   "license": "MIT",
+  "keywords": ["ticket-tracker", "project-management", "react", "fastapi", "kanban", "issue-tracking", "tooling"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/naumanshafi/tooling-ticket-tracker.git"
+  },
   "scripts": {
-    "pre-commit": "cd api && npm run pre-commit && cd ../client && npm run pre-commit",
-    "install-dependencies": "npm install && cd api && npm install && cd ../client && npm install",
-    "build": "cd api && npm run build && cd ../client && npm run build",
-    "start:production": "cd api && npm run start:production && cd ../client && npm run start:production"
+    "install-all": "cd client && npm install && cd ../api && pip install -r requirements.txt",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:client\"",
+    "dev:api": "cd api && source venv/bin/activate && python main.py",
+    "dev:client": "cd client && npm start",
+    "build": "cd client && npm run build",
+    "test": "cd client && npm test",
+    "lint": "cd client && npm run lint",
+    "format": "cd client && npm run format"
   },
   "devDependencies": {
-    "husky": "^4.0.0-beta.5"
+    "concurrently": "^7.6.0"
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "npm run pre-commit"
-    }
-  },
-  "dependencies": {}
+  "engines": {
+    "node": ">=14.0.0",
+    "python": ">=3.8.0"
+  }
 }

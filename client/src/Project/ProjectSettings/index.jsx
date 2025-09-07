@@ -14,7 +14,7 @@ const propTypes = {
 };
 
 const ProjectSettings = ({ project, fetchProject }) => {
-  const [{ isUpdating }, updateProject] = useApi.put('/project');
+  const [{ isUpdating }, updateProject] = useApi.put(`/projects/${project.id}`);
 
   return (
     <Form

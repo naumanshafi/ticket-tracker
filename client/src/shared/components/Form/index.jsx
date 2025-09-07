@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import styled from 'styled-components';
 import { Formik, Form as FormikForm, Field as FormikField } from 'formik';
 import { get, mapValues } from 'lodash';
 
@@ -36,6 +37,15 @@ const Form = ({ validate, validations, ...otherProps }) => (
 );
 
 Form.Element = props => <FormikForm noValidate {...props} />;
+
+Form.Actions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid #dfe1e6;
+`;
 
 Form.Field = mapValues(Field, FieldComponent => ({ name, validate, ...props }) => (
   <FormikField name={name} validate={validate}>

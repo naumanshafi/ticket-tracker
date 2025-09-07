@@ -1,9 +1,11 @@
-export { default as AboutTooltip } from './AboutTooltip';
+export { default as AccessDeniedModal } from './AccessDeniedModal';
 export { default as Avatar } from './Avatar';
 export { default as Button } from './Button';
 export { default as Breadcrumbs } from './Breadcrumbs';
 export { default as ConfirmModal } from './ConfirmModal';
 export { default as CopyLinkButton } from './CopyLinkButton';
+export { default as DeleteModal } from './DeleteModal';
+export { default as LogoutModal } from './LogoutModal';
 export { default as DatePicker } from './DatePicker';
 export { default as Form } from './Form';
 export { default as Icon } from './Icon';

@@ -2,12 +2,13 @@ import styled from 'styled-components';
 
 import { font, mixin } from 'shared/utils/styles';
 
-export const Image = styled.div`
+export const Image = styled.img`
   display: inline-block;
   width: ${props => props.size}px;
   height: ${props => props.size}px;
   border-radius: 100%;
-  ${props => mixin.backgroundImage(props.avatarUrl)}
+  object-fit: cover;
+  border: 2px solid #e8eaed;
 `;
 
 export const Letter = styled.div`

@@ -29,8 +29,8 @@ const ProjectBoardLists = ({ project, filters, updateLocalProjectIssues }) => {
         status: destination.droppableId,
         listPosition: calculateIssueListPosition(project.issues, destination, source, issueId),
       },
-      currentFields: project.issues.find(({ id }) => id === issueId),
-      setLocalData: fields => updateLocalProjectIssues(issueId, fields),
+      currentFields: project.issues.find(({ id }) => id === String(issueId)),
+      setLocalData: fields => updateLocalProjectIssues(String(issueId), fields),
     });
   };
 
@@ -76,7 +76,7 @@ const calculateIssueListPosition = (...args) => {
 
 const getAfterDropPrevNextIssue = (allIssues, destination, source, droppedIssueId) => {
   const beforeDropDestinationIssues = getSortedListIssues(allIssues, destination.droppableId);
-  const droppedIssue = allIssues.find(issue => issue.id === droppedIssueId);
+  const droppedIssue = allIssues.find(issue => String(issue.id) === String(droppedIssueId));
   const isSameList = destination.droppableId === source.droppableId;
 
   const afterDropDestinationIssues = isSameList
