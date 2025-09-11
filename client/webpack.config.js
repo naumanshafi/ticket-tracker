@@ -44,6 +44,9 @@ module.exports = {
     historyApiFallback: true,
     hot: true,
     port: 3000,
+    host: "0.0.0.0",
+    allowedHosts: ["all"],
+    disableHostCheck: true,
   },
   plugins: [
     new webpack.HotModuleReplacementPlugin(),

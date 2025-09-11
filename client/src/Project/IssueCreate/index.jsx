@@ -1,5 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import moment from 'moment';
+import 'moment-timezone';
 
 import {
   IssueType,
@@ -45,6 +47,7 @@ const ProjectIssueCreate = ({ project, fetchProject, onCreate, modalClose }) => 
         reporterId: currentUserId,
         userIds: [],
         priority: IssuePriority.MEDIUM,
+        dueDate: null,
       }}
       validations={{
         type: Form.is.required(),
@@ -54,8 +57,16 @@ const ProjectIssueCreate = ({ project, fetchProject, onCreate, modalClose }) => 
       }}
       onSubmit={async (values, form) => {
         try {
+          // Convert datetime-local input to UTC for storage
+          let dueDate = values.dueDate;
+          if (dueDate) {
+            // datetime-local gives us local time, treat it as PST and convert to UTC
+            dueDate = moment.tz(dueDate, 'America/Los_Angeles').utc().toISOString();
+          }
+          
           await createIssue({
             ...values,
+            dueDate,
             status: IssueStatus.BACKLOG,
             projectId: project.id,
             users: values.userIds.map(id => ({ id })),
@@ -112,6 +123,12 @@ const ProjectIssueCreate = ({ project, fetchProject, onCreate, modalClose }) => 
           options={priorityOptions}
           renderOption={renderPriority}
           renderValue={renderPriority}
+        />
+        <Form.Field.Input
+          type="datetime-local"
+          name="dueDate"
+          label="Due Date (PST)"
+          tip="When this issue should be completed."
         />
         <Actions>
           <ActionButton type="submit" variant="primary" isWorking={isCreating}>

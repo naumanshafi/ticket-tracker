@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 
 import api from 'shared/utils/api';
 import toast from 'shared/utils/toast';
-import { formatDateTimeConversational } from 'shared/utils/dateTime';
+import { formatDateTimeFullPST } from 'shared/utils/dateTime';
 import { ConfirmModal } from 'shared/components';
 
 import BodyForm from '../BodyForm';
@@ -54,7 +54,7 @@ const ProjectBoardIssueDetailsComment = ({ comment, fetchIssue }) => {
       <UserAvatar name={comment.user.name} avatarUrl={comment.user.avatarUrl} />
       <Content>
         <Username>{comment.user.name}</Username>
-        <CreatedAt>{formatDateTimeConversational(comment.createdAt)}</CreatedAt>
+        <CreatedAt>{formatDateTimeFullPST(comment.createdAt)}</CreatedAt>
 
         {isFormOpen ? (
           <BodyForm

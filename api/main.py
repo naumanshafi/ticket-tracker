@@ -178,7 +178,7 @@ async def get_projects(current_user: dict = Depends(get_current_user)):
             FROM project p
             JOIN user_project up ON p.id = up.project_id
             WHERE up.user_id = %s
-            ORDER BY p."createdAt" DESC
+            ORDER BY p."created_at" DESC
         """, (user_id,))
         
         projects = cur.fetchall()
@@ -191,8 +191,8 @@ async def get_projects(current_user: dict = Depends(get_current_user)):
                     "url": p['url'],
                     "description": p['description'],
                     "category": p['category'],
-                    "createdAt": p['createdAt'].isoformat() if p['createdAt'] else None,
-                    "updatedAt": p['updatedAt'].isoformat() if p['updatedAt'] else None,
+                    "createdAt": p['created_at'].isoformat() if p['created_at'] else None,
+                    "updated_at": p['updated_at'].isoformat() if p['updated_at'] else None,
                     "userRole": p['user_role']
                 }
                 for p in projects
@@ -224,7 +224,7 @@ async def get_all_projects(current_user: dict = Depends(get_current_user)):
             LEFT JOIN "user" u ON p.owner_id = u.id
             LEFT JOIN user_project up ON p.id = up.project_id
             GROUP BY p.id, u.name, u.email
-            ORDER BY p."createdAt" DESC
+            ORDER BY p."created_at" DESC
         """)
         
         projects = cur.fetchall()
@@ -237,8 +237,8 @@ async def get_all_projects(current_user: dict = Depends(get_current_user)):
                     "url": p['url'],
                     "description": p['description'],
                     "category": p['category'],
-                    "createdAt": p['createdAt'].isoformat() if p['createdAt'] else None,
-                    "updatedAt": p['updatedAt'].isoformat() if p['updatedAt'] else None,
+                    "createdAt": p['created_at'].isoformat() if p['created_at'] else None,
+                    "updated_at": p['updated_at'].isoformat() if p['updated_at'] else None,
                     "ownerName": p['owner_name'],
                     "ownerEmail": p['owner_email'],
                     "memberCount": p['member_count']
@@ -329,8 +329,8 @@ async def get_project(project_id: int, current_user: dict = Depends(get_current_
                 url,
                 description,
                 category,
-                "createdAt",
-                "updatedAt"
+                "created_at",
+                "updated_at"
             FROM project 
             WHERE id = %s
         """, (project_id,))
@@ -355,8 +355,8 @@ async def get_project(project_id: int, current_user: dict = Depends(get_current_
                 i."timeRemaining",
                 i."reporterId",
                 i."projectId",
-                i."createdAt",
-                i."updatedAt",
+                i."created_at",
+                i."updated_at",
                 u.name as reporter_name,
                 u.email as reporter_email,
                 u."avatarUrl" as reporter_avatar
@@ -397,8 +397,8 @@ async def get_project(project_id: int, current_user: dict = Depends(get_current_
                 timeRemaining=issue['timeRemaining'],
                 reporterId=issue['reporterId'],
                 projectId=issue['projectId'],
-                createdAt=issue['createdAt'].isoformat() if issue['createdAt'] else None,
-                updatedAt=issue['updatedAt'].isoformat() if issue['updatedAt'] else None,
+                createdAt=issue['created_at'].isoformat() if issue['created_at'] else None,
+                updatedAt=issue['updated_at'].isoformat() if issue['updated_at'] else None,
                 userIds=[user['id'] for user in assignee_users],
                 users=[{
                     "id": user['id'],
@@ -427,8 +427,8 @@ async def get_project(project_id: int, current_user: dict = Depends(get_current_
             url=project_data['url'],
             description=project_data['description'],
             category=project_data['category'],
-            createdAt=project_data['createdAt'].isoformat() if project_data['createdAt'] else None,
-            updatedAt=project_data['updatedAt'].isoformat() if project_data['updatedAt'] else None,
+            createdAt=project_data['created_at'].isoformat() if project_data['created_at'] else None,
+            updatedAt=project_data['updated_at'].isoformat() if project_data['updated_at'] else None,
             issues=issues,
             users=users
         )
@@ -513,8 +513,9 @@ def get_issue(issue_id: int):
                 i."timeRemaining",
                 i."reporterId",
                 i."projectId",
-                i."createdAt",
-                i."updatedAt",
+                i."created_at",
+                i."updated_at",
+                i.due_date,
                 u.name as reporter_name,
                 u.email as reporter_email,
                 u."avatarUrl" as reporter_avatar
@@ -547,7 +548,31 @@ def get_issue(issue_id: int):
         """, (issue_id,))
         assignee_users = cur.fetchall()
         
+        # Get comments for this issue
+        cur.execute("""
+            SELECT c.id, c.body, c."created_at", c."updated_at",
+                   u.id as user_id, u.name, u.email, u."avatarUrl"
+            FROM comment c
+            JOIN "user" u ON c."userId" = u.id
+            WHERE c."issueId" = %s
+            ORDER BY c."created_at" ASC
+        """, (issue_id,))
+        comments_data = cur.fetchall()
+        
         comments = []
+        for comment in comments_data:
+            comments.append({
+                "id": str(comment['id']),
+                "body": comment['body'],
+                "createdAt": comment['created_at'].isoformat() if comment['created_at'] else None,
+                "updatedAt": comment['updated_at'].isoformat() if comment['updated_at'] else None,
+                "user": {
+                    "id": comment['user_id'],
+                    "name": comment['name'],
+                    "email": comment['email'],
+                    "avatarUrl": comment['avatarUrl']
+                }
+            })
         
         return {
             "issue": {
@@ -564,8 +589,9 @@ def get_issue(issue_id: int):
                 "timeRemaining": issue_data['timeRemaining'],
                 "reporterId": issue_data['reporterId'],
                 "projectId": issue_data['projectId'],
-                "createdAt": issue_data['createdAt'].isoformat() if issue_data['createdAt'] else None,
-                "updatedAt": issue_data['updatedAt'].isoformat() if issue_data['updatedAt'] else None,
+                "createdAt": issue_data['created_at'].isoformat() if issue_data['created_at'] else None,
+                "updatedAt": issue_data['updated_at'].isoformat() if issue_data['updated_at'] else None,
+                "dueDate": issue_data['due_date'].isoformat() if issue_data['due_date'] else None,
                 "userIds": [user['id'] for user in assignee_users],
                 "users": [{
                     "id": user['id'],
@@ -603,7 +629,8 @@ def update_issue(issue_id: int, issue_update: dict):
             'estimate': 'estimate',
             'timeSpent': '"timeSpent"',
             'timeRemaining': '"timeRemaining"',
-            'reporterId': '"reporterId"'
+            'reporterId': '"reporterId"',
+            'dueDate': 'due_date'
         }
         
         # Handle assignee updates separately
@@ -618,14 +645,14 @@ def update_issue(issue_id: int, issue_update: dict):
                 values.append(value)
         
         # Always update timestamp even if no other fields changed
-        update_fields.append('"updatedAt" = %s')
+        update_fields.append('"updated_at" = %s')
         values.append(datetime.now())
         
         # Add issue_id for WHERE clause
         values.append(issue_id)
         
         # Update issue fields if any
-        if len(update_fields) > 1:  # More than just updatedAt
+        if len(update_fields) > 1:  # More than just updated_at
             query = f"""
                 UPDATE issue 
                 SET {', '.join(update_fields)}
@@ -644,8 +671,9 @@ def update_issue(issue_id: int, issue_update: dict):
                     "timeRemaining",
                     "reporterId",
                     "projectId",
-                    "createdAt",
-                    "updatedAt"
+                    "created_at",
+                    "updated_at",
+                    due_date
             """
             
             cur.execute(query, values)
@@ -656,7 +684,7 @@ def update_issue(issue_id: int, issue_update: dict):
                 SELECT 
                     id, title, type, status, priority, "listPosition",
                     description, "descriptionText", estimate, "timeSpent",
-                    "timeRemaining", "reporterId", "projectId", "createdAt", "updatedAt"
+                    "timeRemaining", "reporterId", "projectId", "created_at", "updated_at", due_date
                 FROM issue WHERE id = %s
             """, (issue_id,))
             updated_issue = cur.fetchone()
@@ -715,8 +743,9 @@ def update_issue(issue_id: int, issue_update: dict):
             "timeRemaining": updated_issue['timeRemaining'],
             "reporterId": updated_issue['reporterId'],
             "projectId": updated_issue['projectId'],
-            "createdAt": updated_issue['createdAt'].isoformat() if updated_issue['createdAt'] else None,
-            "updatedAt": updated_issue['updatedAt'].isoformat() if updated_issue['updatedAt'] else None,
+            "createdAt": updated_issue['created_at'].isoformat() if updated_issue['created_at'] else None,
+            "updatedAt": updated_issue['updated_at'].isoformat() if updated_issue['updated_at'] else None,
+            "dueDate": updated_issue['due_date'].isoformat() if updated_issue['due_date'] else None,
             "userIds": [user['id'] for user in assignee_users],
             "users": [{
                 "id": user['id'],
@@ -764,13 +793,13 @@ def create_issue(issue_data: dict):
             INSERT INTO issue (
                 title, type, status, priority, "listPosition",
                 description, "descriptionText", estimate, "timeSpent",
-                "timeRemaining", "reporterId", "projectId"
+                "timeRemaining", "reporterId", "projectId", due_date
             ) VALUES (
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
             ) RETURNING 
                 id, title, type, status, priority, "listPosition",
                 description, "descriptionText", estimate, "timeSpent",
-                "timeRemaining", "reporterId", "projectId", "createdAt", "updatedAt"
+                "timeRemaining", "reporterId", "projectId", created_at, updated_at, due_date
         """, (
             issue_data['title'],
             issue_data['type'],
@@ -784,6 +813,7 @@ def create_issue(issue_data: dict):
             issue_data.get('timeRemaining'),
             issue_data.get('reporterId', 1),  # Default to user 1
             issue_data.get('projectId', 1),   # Default to project 1
+            issue_data.get('dueDate'),
         ))
         
         new_issue = cur.fetchone()
@@ -826,8 +856,9 @@ def create_issue(issue_data: dict):
                 "timeRemaining": new_issue['timeRemaining'],
                 "reporterId": new_issue['reporterId'],
                 "projectId": new_issue['projectId'],
-                "createdAt": new_issue['createdAt'].isoformat() if new_issue['createdAt'] else None,
-                "updatedAt": new_issue['updatedAt'].isoformat() if new_issue['updatedAt'] else None,
+                "createdAt": new_issue['created_at'].isoformat() if new_issue['created_at'] else None,
+                "updatedAt": new_issue['updated_at'].isoformat() if new_issue['updated_at'] else None,
+                "dueDate": new_issue['due_date'].isoformat() if new_issue['due_date'] else None,
                 "userIds": [user['id'] for user in assignee_users],
                 "users": [{
                     "id": user['id'],
@@ -1198,7 +1229,7 @@ async def create_user(user_data: dict, current_user: dict = Depends(get_current_
                 "email": new_user['email'],
                 "avatarUrl": new_user['avatarUrl'],
                 "role": new_user['role'],
-                "createdAt": new_user['createdAt'].isoformat() if new_user['createdAt'] else None
+                "createdAt": new_user['created_at'].isoformat() if new_user['created_at'] else None
             }
         }
     except HTTPException:
@@ -1227,9 +1258,9 @@ async def get_users(current_user: dict = Depends(get_current_user)):
         
         # Get all users
         cur.execute("""
-            SELECT id, name, email, "avatarUrl", role, "createdAt", last_login
+            SELECT id, name, email, "avatarUrl", role, "created_at", last_login
             FROM "user"
-            ORDER BY "createdAt" DESC
+            ORDER BY "created_at" DESC
         """)
         
         users = cur.fetchall()
@@ -1242,7 +1273,7 @@ async def get_users(current_user: dict = Depends(get_current_user)):
                     "email": u['email'],
                     "avatarUrl": u['avatarUrl'] or f"https://i.pravatar.cc/150?img={u['id']}",
                     "role": u['role'],
-                    "createdAt": u['createdAt'].isoformat() if u['createdAt'] else None,
+                    "createdAt": u['created_at'].isoformat() if u['created_at'] else None,
                     "lastLogin": u['last_login'].isoformat() if u['last_login'] else None
                 }
                 for u in users
@@ -1363,7 +1394,7 @@ async def update_user(user_id: int, user_data: dict, current_user: dict = Depend
         # Update user in users table
         cur.execute("""
             UPDATE "user" 
-            SET name = %s, email = %s, role = %s, "avatarUrl" = %s, "updatedAt" = NOW()
+            SET name = %s, email = %s, role = %s, "avatarUrl" = %s, "updated_at" = NOW()
             WHERE id = %s
             RETURNING *
         """, (new_name, new_email, new_role, new_avatar_url, user_id))
@@ -1393,7 +1424,7 @@ async def update_user(user_id: int, user_data: dict, current_user: dict = Depend
                 "email": updated_user['email'],
                 "avatarUrl": updated_user['avatarUrl'],
                 "role": updated_user['role'],
-                "updatedAt": updated_user['updatedAt'].isoformat() if updated_user['updatedAt'] else None
+                "updated_at": updated_user['updated_at'].isoformat() if updated_user['updated_at'] else None
             }
         }
     except HTTPException:
@@ -1402,6 +1433,139 @@ async def update_user(user_id: int, user_data: dict, current_user: dict = Depend
     except Exception as e:
         print(f"DEBUG: Error updating user: {str(e)}")
         conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+# Comment endpoints
+@app.post("/comments")
+async def create_comment(comment_data: dict, current_user: dict = Depends(get_current_user)):
+    """Create a new comment"""
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    try:
+        # Insert the comment with UTC timestamp
+        cur.execute("""
+            INSERT INTO comment (body, "issueId", "userId", "created_at", "updated_at")
+            VALUES (%s, %s, %s, NOW(), NOW())
+            RETURNING id, body, "created_at", "updated_at"
+        """, (
+            comment_data['body'],
+            comment_data['issueId'],
+            current_user['id']
+        ))
+        
+        comment = cur.fetchone()
+        conn.commit()
+        
+        return {
+            "comment": {
+                "id": str(comment['id']),
+                "body": comment['body'],
+                "createdAt": comment['created_at'].isoformat(),
+                "updatedAt": comment['updated_at'].isoformat(),
+                "user": {
+                    "id": current_user['id'],
+                    "name": current_user['name'],
+                    "email": current_user['email'],
+                    "avatarUrl": current_user['avatarUrl']
+                }
+            }
+        }
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Error creating comment: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+@app.put("/comments/{comment_id}")
+async def update_comment(comment_id: int, comment_data: dict, current_user: dict = Depends(get_current_user)):
+    """Update a comment"""
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    try:
+        # Check if user owns the comment
+        cur.execute("""
+            SELECT "userId" FROM comment WHERE id = %s
+        """, (comment_id,))
+        comment_owner = cur.fetchone()
+        
+        if not comment_owner or comment_owner['userId'] != current_user['id']:
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        # Update the comment
+        cur.execute("""
+            UPDATE comment 
+            SET body = %s, "updated_at" = NOW()
+            WHERE id = %s
+            RETURNING id, body, "created_at", "updated_at"
+        """, (comment_data['body'], comment_id))
+        
+        updated_comment = cur.fetchone()
+        conn.commit()
+        
+        return {
+            "comment": {
+                "id": str(updated_comment['id']),
+                "body": updated_comment['body'],
+                "createdAt": updated_comment['created_at'].isoformat(),
+                "updatedAt": updated_comment['updated_at'].isoformat(),
+                "user": {
+                    "id": current_user['id'],
+                    "name": current_user['name'],
+                    "email": current_user['email'],
+                    "avatarUrl": current_user['avatarUrl']
+                }
+            }
+        }
+        
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception as e:
+        conn.rollback()
+        print(f"Error updating comment: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+@app.delete("/comments/{comment_id}")
+async def delete_comment(comment_id: int, current_user: dict = Depends(get_current_user)):
+    """Delete a comment"""
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    try:
+        # Check if user owns the comment
+        cur.execute("""
+            SELECT "userId" FROM comment WHERE id = %s
+        """, (comment_id,))
+        comment_owner = cur.fetchone()
+        
+        if not comment_owner or comment_owner['userId'] != current_user['id']:
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        # Delete the comment
+        cur.execute("""
+            DELETE FROM comment WHERE id = %s
+        """, (comment_id,))
+        
+        conn.commit()
+        return {"message": "Comment deleted successfully"}
+        
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception as e:
+        conn.rollback()
+        print(f"Error deleting comment: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         cur.close()
@@ -1452,8 +1616,8 @@ async def create_project(project_data: dict, current_user: dict = Depends(get_cu
                 "url": project['url'],
                 "description": project['description'],
                 "category": project['category'],
-                "createdAt": project['createdAt'].isoformat() if project['createdAt'] else None,
-                "updatedAt": project['updatedAt'].isoformat() if project['updatedAt'] else None,
+                "createdAt": project['created_at'].isoformat() if project['created_at'] else None,
+                "updated_at": project['updated_at'].isoformat() if project['updated_at'] else None,
                 "userRole": 'admin'
             }
         }
@@ -1663,7 +1827,7 @@ async def update_project(project_id: int, project_data: dict, current_user: dict
         # Update project
         cur.execute("""
             UPDATE project 
-            SET name = %s, url = %s, description = %s, category = %s, "updatedAt" = %s
+            SET name = %s, url = %s, description = %s, category = %s, "updated_at" = %s
             WHERE id = %s
             RETURNING *
         """, (
@@ -1688,8 +1852,8 @@ async def update_project(project_id: int, project_data: dict, current_user: dict
                 "url": updated_project['url'],
                 "description": updated_project['description'],
                 "category": updated_project['category'],
-                "createdAt": updated_project['createdAt'].isoformat() if updated_project['createdAt'] else None,
-                "updatedAt": updated_project['updatedAt'].isoformat() if updated_project['updatedAt'] else None
+                "createdAt": updated_project['created_at'].isoformat() if updated_project['created_at'] else None,
+                "updated_at": updated_project['updated_at'].isoformat() if updated_project['updated_at'] else None
             }
         }
     except Exception as e:
