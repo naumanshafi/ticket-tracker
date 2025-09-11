@@ -2,7 +2,7 @@ const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 require('dotenv').config();
-//testing
+
 module.exports = {
   mode: 'development',
   entry: path.join(__dirname, 'src/index.jsx'),
