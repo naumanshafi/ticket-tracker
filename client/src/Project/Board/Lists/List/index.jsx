@@ -14,17 +14,56 @@ const propTypes = {
   project: PropTypes.object.isRequired,
   filters: PropTypes.object.isRequired,
   currentUserId: PropTypes.number,
+  renderHeaderOnly: PropTypes.bool,
+  renderContentOnly: PropTypes.bool,
 };
 
 const defaultProps = {
   currentUserId: null,
+  renderHeaderOnly: false,
+  renderContentOnly: false,
 };
 
-const ProjectBoardList = ({ status, project, filters, currentUserId }) => {
+const ProjectBoardList = ({ status, project, filters, currentUserId, renderHeaderOnly, renderContentOnly }) => {
   const filteredIssues = filterIssues(project.issues, filters, currentUserId);
   const filteredListIssues = getSortedListIssues(filteredIssues, status);
   const allListIssues = getSortedListIssues(project.issues, status);
 
+  // Render only header
+  if (renderHeaderOnly) {
+    return (
+      <List>
+        <Title>
+          {`${IssueStatusCopy[status]} `}
+          <IssuesCount>{formatIssuesCount(allListIssues, filteredListIssues)}</IssuesCount>
+        </Title>
+      </List>
+    );
+  }
+
+  // Render only content
+  if (renderContentOnly) {
+    return (
+      <Droppable key={status} droppableId={status}>
+        {provided => (
+          <List>
+            <Issues
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+              data-testid={`board-list:${status}`}
+            >
+              {filteredListIssues.map((issue, index) => (
+                <Issue key={issue.id} projectUsers={project.users} issue={issue} index={index} />
+              ))}
+              {provided.placeholder}
+            </Issues>
+          </List>
+        )}
+      </Droppable>
+    );
+  }
+
+  // Default render (both header and content) - for backward compatibility
   return (
     <Droppable key={status} droppableId={status}>
       {provided => (
