@@ -1046,39 +1046,63 @@ def google_login(google_data: GoogleLoginRequest):
                         detail="You are not authorized to access this application. Please contact an administrator to be added as a project member."
                     )
                 
-                # Update existing user with Google info
+                # Update existing user with Google info (first-time sign-in)
                 cur.execute("""
                     UPDATE "user" SET 
-                    name = CASE WHEN name = email THEN %s ELSE name END,
-                    "avatarUrl" = %s, 
+                    name = CASE 
+                        WHEN name = email OR name IS NULL OR name = '' THEN %s 
+                        WHEN LENGTH(%s) > LENGTH(name) THEN %s
+                        ELSE name 
+                    END,
+                    "avatarUrl" = COALESCE(%s, "avatarUrl"), 
                     google_id = %s,
                     last_login = %s
                     WHERE email = %s
                     RETURNING *
                 """, (
-                    google_data.name,
-                    google_data.picture,
-                    google_data.googleId,
-                    datetime.now(),
-                    google_data.email
+                    google_data.name,      # First name parameter
+                    google_data.name,      # Second name parameter for length comparison
+                    google_data.name,      # Third name parameter for replacement
+                    google_data.picture,   # Avatar URL
+                    google_data.googleId,  # Google ID
+                    datetime.now(),        # Last login
+                    google_data.email      # Email for WHERE clause
                 ))
                 user = cur.fetchone()
         else:
-            # Update google_id and avatar - but only if email matches exactly
+            # Update user with Google data - but only if email matches exactly
             if user['email'] == google_data.email:
-                cur.execute(
-                    'UPDATE "user" SET google_id = %s, "avatarUrl" = %s WHERE id = %s',
-                    (google_data.googleId, google_data.picture, user['id'])
+                # Update name only if current name is just the email (default) or if Google provides a better name
+                update_name = (
+                    user['name'] == user['email'] or  # Current name is just email
+                    not user['name'] or               # No name set
+                    len(google_data.name) > len(user['name'])  # Google name is more complete
                 )
-                print(f"Updated existing user {user['email']} with Google data")
+                
+                new_name = google_data.name if update_name else user['name']
+                
+                cur.execute("""
+                    UPDATE "user" SET 
+                        name = %s,
+                        "avatarUrl" = %s, 
+                        google_id = %s,
+                        last_login = %s
+                    WHERE id = %s
+                    RETURNING *
+                """, (
+                    new_name,
+                    google_data.picture,
+                    google_data.googleId,
+                    datetime.now(),
+                    user['id']
+                ))
+                user = cur.fetchone()  # Get updated user data
+                print(f"Updated existing user {user['email']} with Google data: name='{new_name}', avatar={bool(google_data.picture)}")
             else:
                 print(f"Email mismatch: DB has {user['email']}, Google login is {google_data.email}")
         
-        # Update last login
-        cur.execute(
-            'UPDATE "user" SET last_login = %s WHERE id = %s',
-            (datetime.now(), user['id'])
-        )
+        # Note: last_login is already updated in the user update above for existing users
+        # For new users, it's handled in the INSERT/UPDATE statements
         
         # Create session token with email and role
         token_data = {
