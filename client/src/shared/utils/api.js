@@ -6,7 +6,7 @@ import { objectToQueryString } from 'shared/utils/url';
 import { getStoredAuthToken, removeStoredAuthToken } from 'shared/utils/authToken';
 
 const defaults = {
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000',
+  baseURL: process.env.REACT_APP_API_URL || 'https://ticket-tracker.turing.com/api',
   headers: () => ({
     'Content-Type': 'application/json',
     Authorization: getStoredAuthToken() ? `Bearer ${getStoredAuthToken()}` : undefined,

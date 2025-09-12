@@ -5,7 +5,7 @@ export const config = {
   GOOGLE_CLIENT_SECRET: process.env.REACT_APP_GOOGLE_CLIENT_SECRET || '',
   
   // API Configuration
-  API_URL: process.env.REACT_APP_API_URL || 'http://localhost:5000',
+  API_URL: process.env.REACT_APP_API_URL || 'https://ticket-tracker.turing.com/api',
   
   // Application Configuration
   APP_NAME: 'Ticket Tracker',

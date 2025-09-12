@@ -38,7 +38,7 @@ const DefaultRoute = () => {
 
       try {
         // Get user's projects to redirect to first available one
-        const response = await fetch('http://localhost:5000/projects', {
+        const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://ticket-tracker.turing.com/api'}/projects`, {
           headers: {
             'Authorization': `Bearer ${getStoredAuthToken()}`,
             'Content-Type': 'application/json'
@@ -51,7 +51,7 @@ const DefaultRoute = () => {
             setRedirectPath(`/project/${data.projects[0].id}/board`);
           } else {
             // No projects available
-            const userResponse = await fetch('http://localhost:5000/currentUser', {
+            const userResponse = await fetch(`${process.env.REACT_APP_API_URL || 'https://ticket-tracker.turing.com/api'}/currentUser`, {
               headers: {
                 'Authorization': `Bearer ${getStoredAuthToken()}`,
                 'Content-Type': 'application/json'
