@@ -490,7 +490,7 @@ async def get_current_user_endpoint(current_user: dict = Depends(get_current_use
         id=current_user['id'],
         name=current_user['name'],
         email=current_user['email'],
-        avatarUrl=current_user['avatarUrl'] or f"https://i.pravatar.cc/150?img={current_user['id']}",
+        avatarUrl=current_user['avatarUrl'],
         role=current_user['role']
     )
     
@@ -1215,7 +1215,7 @@ async def create_user(user_data: dict, current_user: dict = Depends(get_current_
         email = user_data.get('email')
         name = user_data.get('name') or email.split('@')[0] if email else 'Unknown User'
         role = user_data.get('role', 'user')
-        avatar_url = user_data.get('avatarUrl') or f"https://ui-avatars.com/api/?name={name}&background=random"
+        avatar_url = user_data.get('avatarUrl')  # Let frontend handle missing avatars with initials
         
         print(f"DEBUG: Creating user with name='{name}', email='{email}', role='{role}'")
         
@@ -1277,7 +1277,7 @@ async def get_users(current_user: dict = Depends(get_current_user)):
                     "id": u['id'],
                     "name": u['name'],
                     "email": u['email'],
-                    "avatarUrl": u['avatarUrl'] or f"https://i.pravatar.cc/150?img={u['id']}",
+                    "avatarUrl": u['avatarUrl'],
                     "role": u['role'],
                     "createdAt": u['created_at'].isoformat() if u['created_at'] else None,
                     "lastLogin": u['last_login'].isoformat() if u['last_login'] else None
@@ -1377,7 +1377,7 @@ async def update_user(user_id: int, user_data: dict, current_user: dict = Depend
             raise HTTPException(status_code=403, detail="Only admins can update users")
         
         # Check if user exists
-        cur.execute('SELECT id, name, email, role FROM "user" WHERE id = %s', (user_id,))
+        cur.execute('SELECT id, name, email, role, "avatarUrl" FROM "user" WHERE id = %s', (user_id,))
         user_to_update = cur.fetchone()
         
         if not user_to_update:
@@ -1389,7 +1389,7 @@ async def update_user(user_id: int, user_data: dict, current_user: dict = Depend
         new_name = user_data.get('name', user_to_update['name'])
         new_email = user_data.get('email', user_to_update['email'])
         new_role = user_data.get('role', user_to_update['role'])
-        new_avatar_url = user_data.get('avatarUrl')
+        new_avatar_url = user_data.get('avatarUrl', user_to_update['avatarUrl'])  # Preserve existing avatar if not provided
         
         # Check if email is already taken by another user
         if new_email != user_to_update['email']:

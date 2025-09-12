@@ -8,8 +8,7 @@ export const config = {
   API_URL: process.env.REACT_APP_API_URL || 'http://localhost:5000',
   
   // Application Configuration
-  APP_NAME: 'Jira Clone',
-  DEFAULT_AVATAR_URL: 'https://i.pravatar.cc/150',
+  APP_NAME: 'Ticket Tracker',
 };
 
 // Log configuration status (remove in production)
