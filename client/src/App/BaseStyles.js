@@ -13,6 +13,7 @@ export default createGlobalStyle`
     color: ${color.textDarkest};
     -webkit-tap-highlight-color: transparent;
     line-height: 1.2;
+    overflow: hidden; /* Prevent page scrolling - only ListsContent should scroll */
     ${font.size(16)}
     ${font.regular}
   }

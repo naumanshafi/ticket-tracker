@@ -93,3 +93,7 @@
 
 # Parcel
 **/.parcel-cache/
+
+# Lock files
+**/*.lock
+package-lock.json

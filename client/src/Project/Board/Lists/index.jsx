@@ -8,7 +8,7 @@ import { moveItemWithinArray, insertItemIntoArray } from 'shared/utils/javascrip
 import { IssueStatus } from 'shared/constants/issues';
 
 import List from './List';
-import { Lists } from './Styles';
+import { Lists, ListsHeader, ListsContent } from './Styles';
 
 const propTypes = {
   project: PropTypes.object.isRequired,
@@ -37,15 +37,30 @@ const ProjectBoardLists = ({ project, filters, updateLocalProjectIssues }) => {
   return (
     <DragDropContext onDragEnd={handleIssueDrop}>
       <Lists>
-        {Object.values(IssueStatus).map(status => (
-          <List
-            key={status}
-            status={status}
-            project={project}
-            filters={filters}
-            currentUserId={currentUserId}
-          />
-        ))}
+        <ListsHeader>
+          {Object.values(IssueStatus).map(status => (
+            <List
+              key={`header-${status}`}
+              status={status}
+              project={project}
+              filters={filters}
+              currentUserId={currentUserId}
+              renderHeaderOnly={true}
+            />
+          ))}
+        </ListsHeader>
+        <ListsContent>
+          {Object.values(IssueStatus).map(status => (
+            <List
+              key={`content-${status}`}
+              status={status}
+              project={project}
+              filters={filters}
+              currentUserId={currentUserId}
+              renderContentOnly={true}
+            />
+          ))}
+        </ListsContent>
       </Lists>
     </DragDropContext>
   );

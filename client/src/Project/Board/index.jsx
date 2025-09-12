@@ -31,6 +31,7 @@ const ProjectBoard = ({ project, fetchProject, updateLocalProjectIssues }) => {
 
   return (
     <Fragment>
+      <div>
       <Breadcrumbs items={['Projects', project.name, 'Kanban Board']} />
       <Header />
       <Filters
@@ -39,11 +40,13 @@ const ProjectBoard = ({ project, fetchProject, updateLocalProjectIssues }) => {
         filters={filters}
         mergeFilters={mergeFilters}
       />
+      </div>
       <Lists
         project={project}
         filters={filters}
         updateLocalProjectIssues={updateLocalProjectIssues}
       />
+      
       <Route
         path={`${match.path}/issues/:issueId`}
         render={routeProps => (
