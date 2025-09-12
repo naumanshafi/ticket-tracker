@@ -25,7 +25,7 @@ import {
 
 const AdminUsers = () => {
   const history = useHistory();
-  const { currentUser } = useCurrentUser();
+  const { currentUser, isLoading: isLoadingUser } = useCurrentUser();
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
@@ -36,47 +36,23 @@ const AdminUsers = () => {
   const [userToDelete, setUserToDelete] = useState(null);
 
   useEffect(() => {
-    console.log('AdminUsers useEffect - currentUser:', currentUser);
-    if (currentUser) {
-      console.log('Current user role:', currentUser.role);
-      if (currentUser.role === 'admin') {
-        console.log('User is admin, fetching users...');
-        fetchUsers();
-      } else {
-        console.log('User is not admin, role:', currentUser.role);
-        // Try to fetch anyway for debugging
-        console.log('Trying to fetch users anyway for debugging...');
-        fetchUsers();
-      }
-    } else {
-      console.log('No current user, but trying to fetch users for debugging...');
-      // Try to fetch anyway for debugging
+    if (currentUser && currentUser.role === 'admin') {
       fetchUsers();
     }
   }, [currentUser]);
 
   const fetchUsers = async () => {
     try {
-      console.log('Fetching users...');
-      console.log('Current user:', currentUser);
-      console.log('Auth token:', localStorage.getItem('authToken'));
-      
       const response = await api.get('/users');
-      console.log('Fetched users response:', response);
       
       if (response && response.users) {
-        console.log('Setting users:', response.users);
         setUsers(response.users);
       } else {
-        console.log('No users in response, setting empty array');
         setUsers([]);
       }
     } catch (error) {
       toast.error('Failed to load users');
       console.error('Error fetching users:', error);
-      console.error('Error status:', error.response?.status);
-      console.error('Error details:', error.response?.data);
-      console.error('Full error:', error);
       setUsers([]);
     } finally {
       setIsLoading(false);
@@ -86,15 +62,12 @@ const AdminUsers = () => {
   const handleAddUser = async (values) => {
     try {
       setIsAdding(true);
-      console.log('Creating user with values:', values);
       const response = await api.post('/users', values);
-      console.log('User creation response:', response);
       toast.success('User created successfully');
       setAddModalOpen(false);
       fetchUsers(); // Refresh the list
     } catch (error) {
       console.error('Error creating user:', error);
-      console.error('Error response:', error.response?.data);
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to create user';
       toast.error(errorMessage);
     } finally {
@@ -143,6 +116,12 @@ const AdminUsers = () => {
     }
   };
 
+  // Show loading while user data is being fetched
+  if (isLoadingUser) {
+    return <PageLoader />;
+  }
+
+  // Check admin access only after user data is loaded
   if (!currentUser || currentUser.role !== 'admin') {
     return (
       <UsersPage>
@@ -152,6 +131,7 @@ const AdminUsers = () => {
     );
   }
 
+  // Show loading while users list is being fetched
   if (isLoading) return <PageLoader />;
 
   return (

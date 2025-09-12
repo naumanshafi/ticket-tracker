@@ -26,7 +26,7 @@ import {
 
 const AdminProjects = () => {
   const history = useHistory();
-  const { currentUser } = useCurrentUser();
+  const { currentUser, isLoading: isLoadingUser } = useCurrentUser();
   const [projects, setProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -34,6 +34,9 @@ const AdminProjects = () => {
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
+    // Only check access and fetch data after user is loaded
+    if (isLoadingUser) return;
+    
     // Check if user is admin
     if (currentUser && currentUser.role !== 'admin') {
       toast.error('Access denied. Admin privileges required.');
@@ -44,7 +47,7 @@ const AdminProjects = () => {
     if (currentUser) {
       fetchAllProjects();
     }
-  }, [currentUser, history]);
+  }, [currentUser, isLoadingUser, history]);
 
   const fetchAllProjects = async () => {
     try {
@@ -91,11 +94,18 @@ const AdminProjects = () => {
   };
 
 
-  if (isLoading) return <PageLoader />;
+  // Show loading while user data is being fetched
+  if (isLoadingUser) {
+    return <PageLoader />;
+  }
 
+  // Check admin access only after user data is loaded
   if (!currentUser || currentUser.role !== 'admin') {
     return null;
   }
+
+  // Show loading while projects are being fetched
+  if (isLoading) return <PageLoader />;
 
   return (
     <AdminProjectsPage>
