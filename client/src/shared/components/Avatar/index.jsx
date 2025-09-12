@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 
+import HoverTooltip from '../HoverTooltip';
 import { Image, Letter } from './Styles';
 
 const propTypes = {
@@ -28,15 +29,24 @@ const Avatar = ({ className, avatarUrl, name, size, ...otherProps }) => {
 
   const validAvatarUrl = avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined' && !imageError;
 
-  if (validAvatarUrl) {
-    return <Image src={avatarUrl} onError={() => setImageError(true)} {...sharedProps} />;
-  }
-
-  return (
+  const avatarElement = validAvatarUrl ? (
+    <Image src={avatarUrl} onError={() => setImageError(true)} {...sharedProps} />
+  ) : (
     <Letter color={getColorFromName(name)} {...sharedProps}>
       <span>{name ? name.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase() : '?'}</span>
     </Letter>
   );
+
+  // Only wrap with tooltip if name is provided
+  if (name && name.trim()) {
+    return (
+      <HoverTooltip content={name} placement="top" delay={300}>
+        {avatarElement}
+      </HoverTooltip>
+    );
+  }
+
+  return avatarElement;
 };
 
 const colors = [
