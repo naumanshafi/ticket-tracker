@@ -8,6 +8,7 @@ export { default as DeleteModal } from './DeleteModal';
 export { default as LogoutModal } from './LogoutModal';
 export { default as DatePicker } from './DatePicker';
 export { default as Form } from './Form';
+export { default as HoverTooltip } from './HoverTooltip';
 export { default as Icon } from './Icon';
 export { default as Input } from './Input';
 export { default as InputDebounced } from './InputDebounced';

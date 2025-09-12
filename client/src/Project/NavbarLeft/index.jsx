@@ -12,7 +12,7 @@ const propTypes = {
 
 const ProjectNavbarLeft = ({ issueSearchModalOpen, issueCreateModalOpen }) => (
   <NavLeft>
-    <LogoLink to="/projects">
+    <LogoLink to="/admin/projects">
       <StyledLogo color="#fff" />
     </LogoLink>
 

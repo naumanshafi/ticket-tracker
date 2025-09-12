@@ -77,7 +77,7 @@ const ProjectSidebar = ({ project }) => {
             style={{ cursor: 'pointer' }}
           >
             <Icon type="component" />
-            <LinkText>All Projects</LinkText>
+            <LinkText>Admin</LinkText>
           </LinkItem>
         )}
         <div style={{ flex: 1 }} />
