@@ -1046,39 +1046,50 @@ def google_login(google_data: GoogleLoginRequest):
                         detail="You are not authorized to access this application. Please contact an administrator to be added as a project member."
                     )
                 
-                # Update existing user with Google info
+                # Update existing user with Google info (first-time sign-in)
+                # Always update name from Google when user first signs in
                 cur.execute("""
                     UPDATE "user" SET 
-                    name = CASE WHEN name = email THEN %s ELSE name END,
+                    name = %s,
                     "avatarUrl" = %s, 
                     google_id = %s,
                     last_login = %s
                     WHERE email = %s
                     RETURNING *
                 """, (
-                    google_data.name,
-                    google_data.picture,
-                    google_data.googleId,
-                    datetime.now(),
-                    google_data.email
+                    google_data.name,      # Always use Google name
+                    google_data.picture,   # Avatar URL
+                    google_data.googleId,  # Google ID
+                    datetime.now(),        # Last login
+                    google_data.email      # Email for WHERE clause
                 ))
                 user = cur.fetchone()
         else:
-            # Update google_id and avatar - but only if email matches exactly
+            # Update user with Google data - but only if email matches exactly
             if user['email'] == google_data.email:
-                cur.execute(
-                    'UPDATE "user" SET google_id = %s, "avatarUrl" = %s WHERE id = %s',
-                    (google_data.googleId, google_data.picture, user['id'])
-                )
-                print(f"Updated existing user {user['email']} with Google data")
+                # Always update name and avatar from Google on sign-in
+                cur.execute("""
+                    UPDATE "user" SET 
+                        name = %s,
+                        "avatarUrl" = %s, 
+                        google_id = %s,
+                        last_login = %s
+                    WHERE id = %s
+                    RETURNING *
+                """, (
+                    google_data.name,      # Always use Google name
+                    google_data.picture,
+                    google_data.googleId,
+                    datetime.now(),
+                    user['id']
+                ))
+                user = cur.fetchone()  # Get updated user data
+                print(f"Updated existing user {user['email']} with Google data: name='{google_data.name}', avatar={bool(google_data.picture)}")
             else:
                 print(f"Email mismatch: DB has {user['email']}, Google login is {google_data.email}")
         
-        # Update last login
-        cur.execute(
-            'UPDATE "user" SET last_login = %s WHERE id = %s',
-            (datetime.now(), user['id'])
-        )
+        # Note: last_login is already updated in the user update above for existing users
+        # For new users, it's handled in the INSERT/UPDATE statements
         
         # Create session token with email and role
         token_data = {
