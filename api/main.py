@@ -1047,22 +1047,17 @@ def google_login(google_data: GoogleLoginRequest):
                     )
                 
                 # Update existing user with Google info (first-time sign-in)
+                # Always update name from Google when user first signs in
                 cur.execute("""
                     UPDATE "user" SET 
-                    name = CASE 
-                        WHEN name = email OR name IS NULL OR name = '' THEN %s 
-                        WHEN LENGTH(%s) > LENGTH(name) THEN %s
-                        ELSE name 
-                    END,
-                    "avatarUrl" = COALESCE(%s, "avatarUrl"), 
+                    name = %s,
+                    "avatarUrl" = %s, 
                     google_id = %s,
                     last_login = %s
                     WHERE email = %s
                     RETURNING *
                 """, (
-                    google_data.name,      # First name parameter
-                    google_data.name,      # Second name parameter for length comparison
-                    google_data.name,      # Third name parameter for replacement
+                    google_data.name,      # Always use Google name
                     google_data.picture,   # Avatar URL
                     google_data.googleId,  # Google ID
                     datetime.now(),        # Last login
@@ -1072,15 +1067,7 @@ def google_login(google_data: GoogleLoginRequest):
         else:
             # Update user with Google data - but only if email matches exactly
             if user['email'] == google_data.email:
-                # Update name only if current name is just the email (default) or if Google provides a better name
-                update_name = (
-                    user['name'] == user['email'] or  # Current name is just email
-                    not user['name'] or               # No name set
-                    len(google_data.name) > len(user['name'])  # Google name is more complete
-                )
-                
-                new_name = google_data.name if update_name else user['name']
-                
+                # Always update name and avatar from Google on sign-in
                 cur.execute("""
                     UPDATE "user" SET 
                         name = %s,
@@ -1090,14 +1077,14 @@ def google_login(google_data: GoogleLoginRequest):
                     WHERE id = %s
                     RETURNING *
                 """, (
-                    new_name,
+                    google_data.name,      # Always use Google name
                     google_data.picture,
                     google_data.googleId,
                     datetime.now(),
                     user['id']
                 ))
                 user = cur.fetchone()  # Get updated user data
-                print(f"Updated existing user {user['email']} with Google data: name='{new_name}', avatar={bool(google_data.picture)}")
+                print(f"Updated existing user {user['email']} with Google data: name='{google_data.name}', avatar={bool(google_data.picture)}")
             else:
                 print(f"Email mismatch: DB has {user['email']}, Google login is {google_data.email}")
         
