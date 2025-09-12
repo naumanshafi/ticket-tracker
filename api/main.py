@@ -367,8 +367,14 @@ async def get_project(project_id: int, current_user: dict = Depends(get_current_
         """, (project_data['id'],))
         issues_data = cur.fetchall()
         
-        # Get all users
-        cur.execute('SELECT * FROM "user"')
+        # Get project members only
+        cur.execute("""
+            SELECT u.id, u.name, u.email, u."avatarUrl"
+            FROM "user" u
+            JOIN user_project up ON u.id = up.user_id
+            WHERE up.project_id = %s
+            ORDER BY u.name
+        """, (project_id,))
         users_data = cur.fetchall()
         
         # Format issues
