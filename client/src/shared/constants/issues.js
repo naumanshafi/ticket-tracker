@@ -30,7 +30,7 @@ export const IssueStatusCopy = {
   [IssueStatus.BACKLOG]: 'Backlog',
   [IssueStatus.SELECTED]: 'Selected for development',
   [IssueStatus.INPROGRESS]: 'In progress',
-  [IssueStatus.UNDERREVIEW]: 'Pending Review',
+  [IssueStatus.UNDERREVIEW]: 'Under Review',
   [IssueStatus.DONE]: 'Done',
 };
 

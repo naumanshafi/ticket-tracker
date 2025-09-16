@@ -10,7 +10,7 @@ import ProTip from './ProTip';
 import { Create, UserAvatar, Right, FakeTextarea } from './Styles';
 
 const propTypes = {
-  issueId: PropTypes.number.isRequired,
+  issueId: PropTypes.string.isRequired,
   fetchIssue: PropTypes.func.isRequired,
 };
 
@@ -24,7 +24,7 @@ const ProjectBoardIssueDetailsCommentsCreate = ({ issueId, fetchIssue }) => {
   const handleCommentCreate = async () => {
     try {
       setCreating(true);
-      await api.post(`/comments`, { body, issueId, userId: currentUser.id });
+      await api.post(`/comments`, { body, issueId: parseInt(issueId, 10), userId: currentUser.id });
       await fetchIssue();
       setFormOpen(false);
       setCreating(false);
