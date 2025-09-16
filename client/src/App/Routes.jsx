@@ -3,6 +3,7 @@ import { Router, Switch, Route, Redirect } from 'react-router-dom';
 
 import history from 'browserHistory';
 import Project from 'Project';
+import Projects from 'Projects';
 import AdminUsers from 'Admin/Users';
 import AdminProjects from 'Admin/Projects';
 import Authenticate from 'Auth/Authenticate';
@@ -48,7 +49,8 @@ const DefaultRoute = () => {
         if (response.ok) {
           const data = await response.json();
           if (data.projects && data.projects.length > 0) {
-            setRedirectPath(`/project/${data.projects[0].id}/board`);
+            // Redirect to projects dashboard instead of first project
+            setRedirectPath('/projects');
           } else {
             // No projects available
             const userResponse = await fetch(`${process.env.REACT_APP_API_URL || 'https://ticket-tracker.turing.com/api'}/currentUser`, {
@@ -118,6 +120,7 @@ const Routes = () => (
     <Switch>
       <Route exact path="/" component={DefaultRoute} />
       <Route path="/authenticate" component={Authenticate} />
+      <PrivateRoute exact path="/projects" component={Projects} />
       <PrivateRoute path="/project/:projectId" component={Project} />
       <PrivateRoute path="/admin/users" component={AdminUsers} />
       <PrivateRoute path="/admin/projects" component={AdminProjects} />

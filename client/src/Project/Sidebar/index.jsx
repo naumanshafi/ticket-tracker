@@ -50,10 +50,18 @@ const ProjectSidebar = ({ project }) => {
 
 
   const renderProjectsItem = () => (
-    <LinkItem as="div" onClick={() => setCreateProjectModalOpen(true)} style={{ cursor: 'pointer' }}>
-      <Icon type="plus" />
-      <LinkText>Create Project</LinkText>
-    </LinkItem>
+    <>
+      <LinkItem as="div" onClick={() => history.push('/projects')} style={{ cursor: 'pointer' }}>
+        <Icon type="component" />
+        <LinkText>Switch Project</LinkText>
+      </LinkItem>
+      {currentUser?.role === 'admin' && (
+        <LinkItem as="div" onClick={() => setCreateProjectModalOpen(true)} style={{ cursor: 'pointer' }}>
+          <Icon type="plus" />
+          <LinkText>Create Project</LinkText>
+        </LinkItem>
+      )}
+    </>
   );
 
   return (
@@ -68,6 +76,20 @@ const ProjectSidebar = ({ project }) => {
         </ProjectInfo>
 
         {renderLinkItem(match, 'Kanban Board', 'board', '/board')}
+        
+        {/* All Projects button for regular users */}
+        {currentUser && currentUser.role !== 'admin' && (
+          <LinkItem 
+            as="div" 
+            onClick={() => history.push('/projects')} 
+            style={{ cursor: 'pointer' }}
+          >
+            <Icon type="component" />
+            <LinkText>All Projects</LinkText>
+          </LinkItem>
+        )}
+        
+        {/* Admin-only sections */}
         {currentUser && currentUser.role === 'admin' && renderLinkItem(match, 'Project Settings', 'settings', '/settings')}
         {currentUser && currentUser.role === 'admin' && renderLinkItem(match, 'Team Members', 'users', '/members')}
         {currentUser && currentUser.role === 'admin' && (
