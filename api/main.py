@@ -12,6 +12,8 @@ import traceback
 import secrets
 import hashlib
 import jwt
+from email_service import email_service, format_priority, format_status
+import asyncio
 
 # Load environment variables
 load_dotenv()
@@ -21,7 +23,7 @@ SECRET_KEY = os.getenv('JWT_SECRET', 'secret')
 ALGORITHM = 'HS256'
 
 # Create FastAPI app
-app = FastAPI(title="Jira Clone API", version="1.0.0")
+app = FastAPI(title="Ticket Tracker API", version="1.0.0")
 
 # Enable CORS with explicit configuration
 app.add_middleware(
@@ -66,6 +68,68 @@ def get_db_connection():
         password=os.getenv('DB_PASSWORD'),
         cursor_factory=RealDictCursor
     )
+
+# Email notification helper functions
+async def send_assignment_notification(issue_id: int, assignee_users: list, project_info: dict, reporter_info: dict):
+    """Send email notification when issue is assigned"""
+    try:
+        # Get issue details
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            SELECT title, description, type, priority 
+            FROM issue 
+            WHERE id = %s
+        """, (issue_id,))
+        issue = cur.fetchone()
+        
+        if not issue:
+            return
+            
+        # Send email to each assignee
+        for user in assignee_users:
+            ticket_url = f"http://localhost:3000/project/{project_info['id']}/board?modal=issue-details&issueId={issue_id}"
+            
+            await email_service.send_ticket_assigned_email(
+                assignee_email=user['email'],
+                assignee_name=user['name'],
+                ticket_id=issue_id,
+                ticket_title=issue['title'],
+                ticket_description=issue['description'] or 'No description provided',
+                ticket_type=issue['type'].title(),
+                priority=format_priority(issue['priority']),
+                project_name=project_info['name'],
+                reporter_name=reporter_info['name'],
+                reporter_email=reporter_info['email'],
+                ticket_url=ticket_url
+            )
+            
+    except Exception as e:
+        print(f"Error sending assignment notification: {str(e)}")
+    finally:
+        if 'cur' in locals():
+            cur.close()
+        if 'conn' in locals():
+            conn.close()
+
+def run_async_email(coro):
+    """Helper to run async email functions"""
+    try:
+        # Create a new event loop for this thread if none exists
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        
+        if loop.is_running():
+            # Schedule the task to run
+            asyncio.create_task(coro)
+        else:
+            loop.run_until_complete(coro)
+    except Exception as e:
+        print(f"Error running async email: {str(e)}")
 
 # Pydantic models for response
 class User(BaseModel):
@@ -174,10 +238,14 @@ async def get_projects(current_user: dict = Depends(get_current_user)):
     try:
         # Get all projects the user has access to
         cur.execute("""
-            SELECT p.*, up.role as user_role
+            SELECT p.*, u.name as owner_name, u.email as owner_email,
+                   COUNT(up2.user_id) as member_count, up.role as user_role
             FROM project p
+            LEFT JOIN "user" u ON p.owner_id = u.id
+            LEFT JOIN user_project up2 ON p.id = up2.project_id
             JOIN user_project up ON p.id = up.project_id
             WHERE up.user_id = %s
+            GROUP BY p.id, u.name, u.email, up.role
             ORDER BY p."created_at" DESC
         """, (user_id,))
         
@@ -193,6 +261,9 @@ async def get_projects(current_user: dict = Depends(get_current_user)):
                     "category": p['category'],
                     "createdAt": p['created_at'].isoformat() if p['created_at'] else None,
                     "updated_at": p['updated_at'].isoformat() if p['updated_at'] else None,
+                    "ownerName": p['owner_name'],
+                    "ownerEmail": p['owner_email'],
+                    "memberCount": p['member_count'],
                     "userRole": p['user_role']
                 }
                 for p in projects
@@ -242,6 +313,58 @@ async def get_all_projects(current_user: dict = Depends(get_current_user)):
                     "ownerName": p['owner_name'],
                     "ownerEmail": p['owner_email'],
                     "memberCount": p['member_count']
+                }
+                for p in projects
+            ]
+        }
+    finally:
+        cur.close()
+        conn.close()
+
+# Get admin's own projects (admin only)
+@app.get("/admin/my-projects")
+async def get_admin_my_projects(current_user: dict = Depends(get_current_user)):
+    """Get projects where the current admin user is a member (admin only)"""
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    try:
+        # Check if current user is admin
+        if current_user.get('role') != 'admin':
+            raise HTTPException(status_code=403, detail="Only admins can access this endpoint")
+        
+        user_id = current_user['id']
+        print(f"DEBUG: Admin {current_user['email']} requesting their own projects")
+        
+        cur.execute("""
+            SELECT p.*, u.name as owner_name, u.email as owner_email,
+                   COUNT(up2.user_id) as member_count, up.role as user_role
+            FROM project p
+            LEFT JOIN "user" u ON p.owner_id = u.id
+            LEFT JOIN user_project up2 ON p.id = up2.project_id
+            JOIN user_project up ON p.id = up.project_id
+            WHERE up.user_id = %s
+            GROUP BY p.id, u.name, u.email, up.role
+            ORDER BY p."created_at" DESC
+        """, (user_id,))
+        
+        projects = cur.fetchall()
+        
+        return {
+            "projects": [
+                {
+                    "id": p['id'],
+                    "name": p['name'],
+                    "url": p['url'],
+                    "description": p['description'],
+                    "category": p['category'],
+                    "createdAt": p['created_at'].isoformat() if p['created_at'] else None,
+                    "updated_at": p['updated_at'].isoformat() if p['updated_at'] else None,
+                    "ownerName": p['owner_name'],
+                    "ownerEmail": p['owner_email'],
+                    "memberCount": p['member_count'],
+                    "userRole": p['user_role']
                 }
                 for p in projects
             ]
@@ -619,6 +742,28 @@ def update_issue(issue_id: int, issue_update: dict):
     cur = conn.cursor()
     
     try:
+        # Get the current issue state to compare for email notifications
+        cur.execute("""
+            SELECT status, "reporterId", "projectId", title
+            FROM issue WHERE id = %s
+        """, (issue_id,))
+        old_issue = cur.fetchone()
+        
+        if not old_issue:
+            return JSONResponse(
+                status_code=404,
+                content={
+                    "error": {
+                        "code": "ISSUE_NOT_FOUND", 
+                        "message": f"Issue {issue_id} not found",
+                        "status": 404,
+                        "data": {}
+                    }
+                }
+            )
+        
+        old_status = old_issue['status']
+        
         # Build update query dynamically based on provided fields
         update_fields = []
         values = []
@@ -734,6 +879,68 @@ def update_issue(issue_id: int, issue_update: dict):
         
         conn.commit()
         
+        # Send email notifications for status changes
+        new_status = updated_issue['status']
+        if old_status != new_status:
+            try:
+                # Get all stakeholders (reporter + assignees)
+                stakeholder_emails = []
+                stakeholder_names = []
+                
+                # Get reporter info
+                if updated_issue['reporterId']:
+                    cur.execute("""
+                        SELECT name, email FROM "user" WHERE id = %s
+                    """, (updated_issue['reporterId'],))
+                    reporter = cur.fetchone()
+                    if reporter and reporter['email']:
+                        stakeholder_emails.append(reporter['email'])
+                        stakeholder_names.append(reporter['name'])
+                
+                # Add assignees
+                for user in assignee_users:
+                    if user['email'] and user['email'] not in stakeholder_emails:
+                        stakeholder_emails.append(user['email'])
+                        stakeholder_names.append(user['name'])
+                
+                # Get project name
+                cur.execute("""
+                    SELECT name FROM project WHERE id = %s
+                """, (updated_issue['projectId'],))
+                project = cur.fetchone()
+                project_name = project['name'] if project else 'Unknown Project'
+                
+                if stakeholder_emails:
+                    # We need to get the current user who made the change
+                    # For now, we'll use a placeholder - you may want to pass this from the endpoint
+                    updated_by_name = "System User"
+                    
+                    ticket_url = f"http://localhost:3000/project/{updated_issue['projectId']}/board?modal=issue-details&issueId={issue_id}"
+                    
+                    # Send status change notification
+                    async def send_status_notification():
+                        await email_service.send_ticket_status_changed_email(
+                            user_emails=stakeholder_emails,
+                            user_names=stakeholder_names,
+                            ticket_id=issue_id,
+                            ticket_title=updated_issue['title'],
+                            old_status=format_status(old_status),
+                            new_status=format_status(new_status),
+                            project_name=project_name,
+                            updated_by_name=updated_by_name,
+                            ticket_url=ticket_url
+                        )
+                    
+                    print(f"🚀 ATTEMPTING TO SEND STATUS CHANGE EMAIL for issue {issue_id}")
+                    print(f"   📊 Status: {old_status} → {new_status}")
+                    print(f"   📧 Recipients: {stakeholder_emails}")
+                    print(f"   📁 Project: {project_name}")
+                    
+                    run_async_email(send_status_notification())
+                    print(f"✅ DEBUG: Status change email triggered for issue {issue_id}: {old_status} -> {new_status}")
+            except Exception as email_error:
+                print(f"DEBUG: Status change email failed: {str(email_error)}")
+        
         # Return the full updated issue to ensure frontend has all the data
         return {
             "id": str(updated_issue['id']),
@@ -845,6 +1052,42 @@ def create_issue(issue_data: dict):
             WHERE iu.issue_id = %s
         """, (issue_id,))
         assignee_users = cur.fetchall()
+        
+        # Send email notifications for assigned users
+        if assignee_users:
+            try:
+                # Get project and reporter info for email
+                cur.execute("""
+                    SELECT p.name as project_name, p.id as project_id,
+                           r.name as reporter_name, r.email as reporter_email
+                    FROM project p
+                    LEFT JOIN "user" r ON %s = r.id
+                    WHERE p.id = %s
+                """, (new_issue['reporterId'], new_issue['projectId']))
+                project_reporter_info = cur.fetchone()
+                
+                if project_reporter_info:
+                    project_info = {
+                        'id': project_reporter_info['project_id'],
+                        'name': project_reporter_info['project_name']
+                    }
+                    reporter_info = {
+                        'name': project_reporter_info['reporter_name'] or 'System',
+                        'email': project_reporter_info['reporter_email'] or 'system@example.com'
+                    }
+                    
+                    # Send assignment notification asynchronously
+                    print(f"🚀 ATTEMPTING TO SEND ASSIGNMENT EMAIL for issue {issue_id}")
+                    print(f"   📧 Assignees: {[user['email'] for user in assignee_users]}")
+                    print(f"   📁 Project: {project_info['name']}")
+                    print(f"   👤 Reporter: {reporter_info['name']}")
+                    
+                    run_async_email(send_assignment_notification(
+                        issue_id, assignee_users, project_info, reporter_info
+                    ))
+                    print(f"✅ DEBUG: Email notification triggered for issue {issue_id} assignment")
+            except Exception as email_error:
+                print(f"DEBUG: Email notification failed: {str(email_error)}")
         
         # Return the created issue
         return {

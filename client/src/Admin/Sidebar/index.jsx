@@ -49,7 +49,10 @@ const AdminSidebar = () => {
 
   return (
     <Sidebar>
-      <ProjectInfo>
+      <ProjectInfo 
+        style={{ cursor: 'pointer' }}
+        onClick={() => history.push('/admin/my-projects')}
+      >
         <ProjectAvatar name="Admin Panel" />
         <ProjectTexts>
           <ProjectName>Admin Panel</ProjectName>
@@ -62,8 +65,8 @@ const AdminSidebar = () => {
         onClick={() => history.push('/admin/projects')} 
         style={{ 
           cursor: 'pointer',
-          background: isActive('/admin/projects') ? '#deebff' : 'transparent',
-          color: isActive('/admin/projects') ? '#0052cc' : '#5e6c84'
+          background: isActive('/admin/projects') ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+          color: isActive('/admin/projects') ? '#ffffff' : '#deebff'
         }}
       >
         <Icon type="component" />
@@ -72,11 +75,24 @@ const AdminSidebar = () => {
 
       <LinkItem 
         as="div" 
+        onClick={() => history.push('/admin/my-projects')} 
+        style={{ 
+          cursor: 'pointer',
+          background: isActive('/admin/my-projects') ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+          color: isActive('/admin/my-projects') ? '#ffffff' : '#deebff'
+        }}
+      >
+        <Icon type="issues" />
+        <LinkText>My Projects</LinkText>
+      </LinkItem>
+
+      <LinkItem 
+        as="div" 
         onClick={() => history.push('/admin/users')} 
         style={{ 
           cursor: 'pointer',
-          background: isActive('/admin/users') ? '#deebff' : 'transparent',
-          color: isActive('/admin/users') ? '#0052cc' : '#5e6c84'
+          background: isActive('/admin/users') ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+          color: isActive('/admin/users') ? '#ffffff' : '#deebff'
         }}
       >
         <Icon type="users" />
@@ -86,7 +102,10 @@ const AdminSidebar = () => {
       <LinkItem 
         as="div" 
         onClick={() => setCreateProjectModalOpen(true)} 
-        style={{ cursor: 'pointer' }}
+        style={{ 
+          cursor: 'pointer',
+          color: '#deebff'
+        }}
       >
         <Icon type="plus" />
         <LinkText>Create Project</LinkText>
@@ -97,7 +116,11 @@ const AdminSidebar = () => {
       <LinkItem 
         as="div" 
         onClick={() => setLogoutConfirmOpen(true)} 
-        style={{ cursor: 'pointer', marginTop: 'auto' }}
+        style={{ 
+          cursor: 'pointer', 
+          marginTop: 'auto',
+          color: '#deebff'
+        }}
       >
         <Icon type="close" />
         <LinkText>Logout</LinkText>
