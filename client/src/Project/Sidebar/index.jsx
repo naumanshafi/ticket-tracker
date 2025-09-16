@@ -51,7 +51,7 @@ const ProjectSidebar = ({ project }) => {
 
   const renderProjectsItem = () => (
     <>
-      <LinkItem as="div" onClick={() => history.push('/projects')} style={{ cursor: 'pointer' }}>
+      <LinkItem as="div" onClick={() => history.push(currentUser?.role === 'admin' ? '/admin/my-projects' : '/user/my-projects')} style={{ cursor: 'pointer' }}>
         <Icon type="component" />
         <LinkText>Switch Project</LinkText>
       </LinkItem>
@@ -77,15 +77,15 @@ const ProjectSidebar = ({ project }) => {
 
         {renderLinkItem(match, 'Kanban Board', 'board', '/board')}
         
-        {/* All Projects button for regular users */}
+        {/* My Projects button for regular users */}
         {currentUser && currentUser.role !== 'admin' && (
           <LinkItem 
             as="div" 
-            onClick={() => history.push('/projects')} 
+            onClick={() => history.push('/user/my-projects')} 
             style={{ cursor: 'pointer' }}
           >
             <Icon type="component" />
-            <LinkText>All Projects</LinkText>
+            <LinkText>My Projects</LinkText>
           </LinkItem>
         )}
         
