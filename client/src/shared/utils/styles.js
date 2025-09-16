@@ -46,6 +46,7 @@ export const issueStatusColors = {
   [IssueStatus.BACKLOG]: color.textDark,
   [IssueStatus.INPROGRESS]: '#fff',
   [IssueStatus.SELECTED]: color.textDark,
+  [IssueStatus.UNDERREVIEW]: '#fff',
   [IssueStatus.DONE]: '#fff',
 };
 
@@ -53,6 +54,7 @@ export const issueStatusBackgroundColors = {
   [IssueStatus.BACKLOG]: color.backgroundMedium,
   [IssueStatus.INPROGRESS]: color.primary,
   [IssueStatus.SELECTED]: color.backgroundMedium,
+  [IssueStatus.UNDERREVIEW]: color.warning,
   [IssueStatus.DONE]: color.success,
 };
 
