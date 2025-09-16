@@ -7,22 +7,27 @@ import toast from 'shared/utils/toast';
 import useCurrentUser from 'shared/hooks/currentUser';
 
 import {
-  AdminProjectsPage,
-  AdminProjectsContainer,
-  AdminProjectsContent,
+  MyProjectsPage,
+  MyProjectsContainer,
+  MyProjectsContent,
   Header,
+  HeaderContent,
   Title,
   ProjectsGrid,
   ProjectCard,
+  ProjectCardInner,
   ProjectHeader,
   ProjectName,
   ProjectDescription,
   ProjectMeta,
   ProjectOwner,
   ProjectStats,
-  ProjectActions,
-  NoProjects
-} from './Styles';
+  ProjectBadge,
+  NoProjects,
+  EmptyStateIcon,
+  EmptyStateTitle,
+  EmptyStateDescription
+} from 'shared/components/MyProjects/Styles';
 
 const AdminProjects = () => {
   const history = useHistory();
@@ -108,142 +113,123 @@ const AdminProjects = () => {
   if (isLoading) return <PageLoader />;
 
   return (
-    <AdminProjectsPage>
-      <AdminProjectsContainer>
+    <MyProjectsPage>
+      <MyProjectsContainer>
         <AdminSidebar />
-        <AdminProjectsContent>
+        <MyProjectsContent>
           <Header>
-            <div>
-              <Title>All Projects ({projects.length})</Title>
-              <p style={{ color: '#5e6c84', fontSize: '14px', margin: '8px 0 0 0' }}>
-                Manage all projects in the system
-              </p>
-            </div>
+            <HeaderContent>
+              <div>
+                <Title>All Projects ({projects.length})</Title>
+                <p style={{ color: '#5e6c84', fontSize: '14px', margin: '8px 0 0 0' }}>
+                  Manage all projects in the system
+                </p>
+              </div>
+            </HeaderContent>
           </Header>
 
           {projects.length === 0 ? (
             <NoProjects>
-              <h2>No projects found</h2>
-              <p>No projects have been created yet</p>
+              <EmptyStateIcon>📂</EmptyStateIcon>
+              <EmptyStateTitle>No projects found</EmptyStateTitle>
+              <EmptyStateDescription>
+                No projects have been created yet
+              </EmptyStateDescription>
             </NoProjects>
           ) : (
             <ProjectsGrid>
               {projects.map(project => (
-                <ProjectCard key={project.id}>
-                  <div 
-                    onClick={() => handleProjectClick(project.id)}
-                    style={{ 
-                      cursor: 'pointer', 
-                      flex: 1,
-                      marginRight: '47px'
-                    }}
-                  >
+                <ProjectCard key={project.id} onClick={() => handleProjectClick(project.id)}>
+                  <ProjectCardInner>
                     <ProjectHeader>
                       <ProjectName>{project.name}</ProjectName>
-                      <ProjectActions>
-                        <div style={{
-                          background: project.category === 'software' ? '#0052cc' : 
-                                    project.category === 'marketing' ? '#ff5630' : '#00875a',
-                          color: 'white',
-                          padding: '4px 8px',
-                          borderRadius: '12px',
-                          fontSize: '10px',
-                          fontWeight: '600',
-                          textTransform: 'uppercase'
-                        }}>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <ProjectBadge category={project.category}>
                           {project.category}
-                        </div>
-                      </ProjectActions>
+                        </ProjectBadge>
+                        {/* Delete Button */}
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            openDeleteModal(project, e);
+                          }}
+                          style={{
+                            padding: '6px',
+                            background: 'rgba(255, 71, 87, 0.1)',
+                            border: '1px solid rgba(255, 71, 87, 0.3)',
+                            borderRadius: '6px',
+                            color: '#ff4757',
+                            fontSize: '12px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '28px',
+                            height: '28px'
+                          }}
+                          title="Delete Project"
+                          onMouseEnter={(e) => {
+                            e.target.style.background = 'rgba(255, 71, 87, 0.2)';
+                            e.target.style.transform = 'scale(1.1)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.background = 'rgba(255, 71, 87, 0.1)';
+                            e.target.style.transform = 'scale(1)';
+                          }}
+                        >
+                          🗑️
+                        </button>
+                      </div>
                     </ProjectHeader>
-                  </div>
-                  
-                  {/* Separate Delete Button */}
-                  <div style={{
-                    position: 'absolute',
-                    top: '16px',
-                    right: '16px',
-                    zIndex: 20
-                  }}>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        openDeleteModal(project, e);
-                      }}
-                      style={{
-                        padding: '8px',
-                        background: 'rgba(255, 71, 87, 0.1)',
-                        border: '1px solid rgba(255, 71, 87, 0.3)',
-                        borderRadius: '8px',
-                        color: '#ff4757',
-                        fontSize: '16px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '36px',
-                        height: '36px'
-                      }}
-                      title="Delete Project"
-                      onMouseEnter={(e) => {
-                        e.target.style.background = 'rgba(255, 71, 87, 0.2)';
-                        e.target.style.transform = 'scale(1.1)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.background = 'rgba(255, 71, 87, 0.1)';
-                        e.target.style.transform = 'scale(1)';
-                      }}
-                    >
-                      🗑️
-                    </button>
-                  </div>
-                  
-                  <ProjectDescription>
-                    {project.description || 'No description provided'}
-                  </ProjectDescription>
-                  
-                  <ProjectMeta>
-                    <ProjectOwner>
-                      <Avatar
-                        name={project.ownerName}
-                        size={24}
-                      />
-                      <div>
-                        <div style={{ fontSize: '12px', fontWeight: '500', color: '#172b4d' }}>
-                          {project.ownerName}
-                        </div>
-                        <div style={{ fontSize: '11px', color: '#5e6c84' }}>
-                          Owner
-                        </div>
-                      </div>
-                    </ProjectOwner>
                     
-                    <ProjectStats>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '16px', fontWeight: '600', color: '#0052cc' }}>
-                          {project.memberCount}
+                    <ProjectDescription>
+                      {project.description || 'No description provided'}
+                    </ProjectDescription>
+                    
+                    <ProjectMeta>
+                      <ProjectOwner>
+                        <Avatar
+                          name={project.ownerName || 'Unknown'}
+                          size={32}
+                        />
+                        <div>
+                          <div style={{ fontSize: '13px', fontWeight: '600', color: '#172b4d' }}>
+                            {project.ownerName || 'Unknown Owner'}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#5e6c84' }}>
+                            Project Owner
+                          </div>
                         </div>
-                        <div style={{ fontSize: '11px', color: '#5e6c84' }}>
-                          Members
+                      </ProjectOwner>
+                      
+                      <ProjectStats>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '18px', fontWeight: '700', color: '#0052cc' }}>
+                            {project.memberCount || 0}
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#5e6c84', fontWeight: '500' }}>
+                            Members
+                          </div>
                         </div>
-                      </div>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '11px', color: '#5e6c84' }}>
-                          Created
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '11px', color: '#5e6c84', fontWeight: '500' }}>
+                            Created
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#172b4d', fontWeight: '600' }}>
+                            {project.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'Unknown'}
+                          </div>
                         </div>
-                        <div style={{ fontSize: '11px', color: '#172b4d' }}>
-                          {new Date(project.createdAt).toLocaleDateString()}
-                        </div>
-                      </div>
-                    </ProjectStats>
-                  </ProjectMeta>
+                      </ProjectStats>
+                    </ProjectMeta>
+                  </ProjectCardInner>
                 </ProjectCard>
               ))}
             </ProjectsGrid>
           )}
-        </AdminProjectsContent>
-      </AdminProjectsContainer>
+        </MyProjectsContent>
+      </MyProjectsContainer>
 
       <DeleteModal
         isOpen={deleteModalOpen}
@@ -256,7 +242,7 @@ const AdminProjects = () => {
         confirmText="Delete Project"
         type="project"
       />
-    </AdminProjectsPage>
+    </MyProjectsPage>
   );
 };
 
