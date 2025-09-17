@@ -22,6 +22,9 @@ load_dotenv()
 SECRET_KEY = os.getenv('JWT_SECRET', 'secret')
 ALGORITHM = 'HS256'
 
+# Base URL Configuration for emails
+BASE_URL = os.getenv('BASE_URL', 'http://localhost:3000')
+
 # Create FastAPI app
 app = FastAPI(title="Ticket Tracker API", version="1.0.0")
 
@@ -89,7 +92,13 @@ async def send_assignment_notification(issue_id: int, assignee_users: list, proj
             
         # Send email to each assignee
         for user in assignee_users:
-            ticket_url = f"http://localhost:3000/project/{project_info['id']}/board?modal=issue-details&issueId={issue_id}"
+            # Determine URL format based on environment
+            if BASE_URL.startswith('http://localhost'):
+                ticket_url = f"{BASE_URL}/project/{project_info['id']}/board?modal=issue-details&issueId={issue_id}"
+                unsubscribe_url = f"{BASE_URL}/unsubscribe"
+            else:
+                ticket_url = f"{BASE_URL}/project/{project_info['id']}/board/issues/{issue_id}"
+                unsubscribe_url = f"{BASE_URL}/unsubscribe"
             
             await email_service.send_ticket_assigned_email(
                 assignee_email=user['email'],
@@ -102,7 +111,8 @@ async def send_assignment_notification(issue_id: int, assignee_users: list, proj
                 project_name=project_info['name'],
                 reporter_name=reporter_info['name'],
                 reporter_email=reporter_info['email'],
-                ticket_url=ticket_url
+                ticket_url=ticket_url,
+                unsubscribe_url=unsubscribe_url
             )
             
     except Exception as e:
@@ -736,7 +746,7 @@ def get_issue(issue_id: int):
         conn.close()
 
 @app.put("/issues/{issue_id}")
-def update_issue(issue_id: int, issue_update: dict):
+def update_issue(issue_id: int, issue_update: dict, current_user: dict = Depends(get_current_user)):
     """Update an issue"""
     conn = get_db_connection()
     cur = conn.cursor()
@@ -911,11 +921,16 @@ def update_issue(issue_id: int, issue_update: dict):
                 project_name = project['name'] if project else 'Unknown Project'
                 
                 if stakeholder_emails:
-                    # We need to get the current user who made the change
-                    # For now, we'll use a placeholder - you may want to pass this from the endpoint
-                    updated_by_name = "System User"
+                    # Get the current user who made the change
+                    updated_by_name = current_user.get('name', current_user.get('email', 'Unknown User'))
                     
-                    ticket_url = f"http://localhost:3000/project/{updated_issue['projectId']}/board?modal=issue-details&issueId={issue_id}"
+                    # Determine URL format based on environment
+                    if BASE_URL.startswith('http://localhost'):
+                        ticket_url = f"{BASE_URL}/project/{updated_issue['projectId']}/board?modal=issue-details&issueId={issue_id}"
+                        unsubscribe_url = f"{BASE_URL}/unsubscribe"
+                    else:
+                        ticket_url = f"{BASE_URL}/project/{updated_issue['projectId']}/board/issues/{issue_id}"
+                        unsubscribe_url = f"{BASE_URL}/unsubscribe"
                     
                     # Send status change notification
                     async def send_status_notification():
@@ -928,7 +943,8 @@ def update_issue(issue_id: int, issue_update: dict):
                             new_status=format_status(new_status),
                             project_name=project_name,
                             updated_by_name=updated_by_name,
-                            ticket_url=ticket_url
+                            ticket_url=ticket_url,
+                            unsubscribe_url=unsubscribe_url
                         )
                     
                     print(f"🚀 ATTEMPTING TO SEND STATUS CHANGE EMAIL for issue {issue_id}")
