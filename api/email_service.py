@@ -125,20 +125,21 @@ class EmailService:
         receivers = [{"email": email, "name": name} for email, name in zip(user_emails, user_names)]
         replacements = []
         
-        # Create a single replacement object for all variables
-        replacement_data = {
-            "senderVariant": "1",
-            "userName": user_names[0] if user_names else "User",
-            "ticketId": str(ticket_id),
-            "ticketTitle": ticket_title,
-            "oldStatus": old_status,
-            "newStatus": new_status,
-            "projectName": project_name,
-            "updatedByName": updated_by_name,
-            "ticketUrl": ticket_url,
-            "unsubscribeUrl": unsubscribe_url or f"{ticket_url}/unsubscribe"
-        }
-        replacements = [replacement_data]
+        # Create personalized replacement object for each recipient
+        for user_name in user_names:
+            replacement_data = {
+                "senderVariant": "1",
+                "userName": user_name,
+                "ticketId": str(ticket_id),
+                "ticketTitle": ticket_title,
+                "oldStatus": old_status,
+                "newStatus": new_status,
+                "projectName": project_name,
+                "updatedByName": updated_by_name,
+                "ticketUrl": ticket_url,
+                "unsubscribeUrl": unsubscribe_url or f"{ticket_url}/unsubscribe"
+            }
+            replacements.append(replacement_data)
         
         print(f"📧 DEBUG: Sending status change email with {len(replacements)} replacements")
         print(f"📋 DEBUG: First replacement: {replacements[0] if replacements else 'None'}")
