@@ -200,11 +200,12 @@ class EmailService:
         project_name: str,
         ticket_status: str,
         ticket_url: str,
+        unsubscribe_url: str = None,
         template_id: int = 10622  # Template ID for comments
     ) -> bool:
         """Send comment notification"""
         
-        receivers = [{"email": email} for email in notification_emails]
+        receivers = [{"email": email, "name": name} for email, name in zip(notification_emails, notification_names)]
         replacements = []
         
         for user_name in notification_names:

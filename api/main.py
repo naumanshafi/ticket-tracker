@@ -12,7 +12,7 @@ import traceback
 import secrets
 import hashlib
 import jwt
-from email_service import email_service, format_priority, format_status
+from email_service import email_service, format_priority, format_status, get_user_initials
 import asyncio
 
 # Load environment variables
@@ -90,7 +90,7 @@ async def send_assignment_notification(issue_id: int, assignee_users: list, proj
         if not issue:
             return
             
-        # Send email to each assignee
+        # Send email to assignees
         for user in assignee_users:
             # Determine URL format based on environment
             if BASE_URL.startswith('http://localhost'):
@@ -114,6 +114,36 @@ async def send_assignment_notification(issue_id: int, assignee_users: list, proj
                 ticket_url=ticket_url,
                 unsubscribe_url=unsubscribe_url
             )
+        
+        # Also notify the reporter (if different from assignees)
+        if reporter_info and reporter_info['email']:
+            # Check if reporter is not already in assignee list
+            assignee_emails = [user['email'] for user in assignee_users]
+            if reporter_info['email'] not in assignee_emails:
+                # Determine URL format based on environment
+                if BASE_URL.startswith('http://localhost'):
+                    ticket_url = f"{BASE_URL}/project/{project_info['id']}/board?modal=issue-details&issueId={issue_id}"
+                    unsubscribe_url = f"{BASE_URL}/unsubscribe"
+                else:
+                    ticket_url = f"{BASE_URL}/project/{project_info['id']}/board/issues/{issue_id}"
+                    unsubscribe_url = f"{BASE_URL}/unsubscribe"
+                
+                # Send notification to reporter
+                await email_service.send_ticket_assigned_email(
+                    assignee_email=reporter_info['email'],
+                    assignee_name=reporter_info['name'],
+                    ticket_id=issue_id,
+                    ticket_title=issue['title'],
+                    ticket_description=issue['description'] or 'No description provided',
+                    ticket_type=issue['type'].title(),
+                    priority=format_priority(issue['priority']),
+                    project_name=project_info['name'],
+                    reporter_name=reporter_info['name'],
+                    reporter_email=reporter_info['email'],
+                    ticket_url=ticket_url,
+                    unsubscribe_url=unsubscribe_url
+                )
+                print(f"📧 Also notified reporter: {reporter_info['email']}")
             
     except Exception as e:
         print(f"Error sending assignment notification: {str(e)}")
@@ -1735,6 +1765,80 @@ async def create_comment(comment_data: dict, current_user: dict = Depends(get_cu
         
         comment = cur.fetchone()
         conn.commit()
+        
+        # Send email notifications for new comment
+        try:
+            # Get issue and project details
+            cur.execute("""
+                SELECT i.title, i."reporterId", i."projectId", p.name as project_name
+                FROM issue i
+                JOIN project p ON i."projectId" = p.id
+                WHERE i.id = %s
+            """, (comment_data['issueId'],))
+            issue_details = cur.fetchone()
+            
+            if issue_details:
+                # Get all stakeholders (reporter + assignees)
+                stakeholder_emails = []
+                stakeholder_names = []
+                
+                # Get reporter info (if not the commenter)
+                if issue_details['reporterId'] and issue_details['reporterId'] != current_user['id']:
+                    cur.execute("""
+                        SELECT name, email FROM "user" WHERE id = %s
+                    """, (issue_details['reporterId'],))
+                    reporter = cur.fetchone()
+                    if reporter and reporter['email']:
+                        stakeholder_emails.append(reporter['email'])
+                        stakeholder_names.append(reporter['name'])
+                
+                # Get assignees (exclude commenter)
+                cur.execute("""
+                    SELECT u.name, u.email 
+                    FROM "user" u
+                    JOIN issue_user iu ON u.id = iu.user_id
+                    WHERE iu.issue_id = %s AND u.id != %s
+                """, (comment_data['issueId'], current_user['id']))
+                assignees = cur.fetchall()
+                
+                for assignee in assignees:
+                    if assignee['email'] and assignee['email'] not in stakeholder_emails:
+                        stakeholder_emails.append(assignee['email'])
+                        stakeholder_names.append(assignee['name'])
+                
+                if stakeholder_emails:
+                    # Determine URL format based on environment
+                    if BASE_URL.startswith('http://localhost'):
+                        ticket_url = f"{BASE_URL}/project/{issue_details['projectId']}/board?modal=issue-details&issueId={comment_data['issueId']}"
+                        unsubscribe_url = f"{BASE_URL}/unsubscribe"
+                    else:
+                        ticket_url = f"{BASE_URL}/project/{issue_details['projectId']}/board/issues/{comment_data['issueId']}"
+                        unsubscribe_url = f"{BASE_URL}/unsubscribe"
+                    
+                    # Send comment notification
+                    async def send_comment_notification():
+                        await email_service.send_comment_added_email(
+                            notification_emails=stakeholder_emails,
+                            notification_names=stakeholder_names,
+                            ticket_id=comment_data['issueId'],
+                            ticket_title=issue_details['title'],
+                            commenter_name=current_user['name'],
+                            commenter_initials=get_user_initials(current_user['name']),
+                            comment_content=comment_data['body'][:200] + ('...' if len(comment_data['body']) > 200 else ''),
+                            comment_time=comment['created_at'].strftime('%B %d, %Y at %I:%M %p'),
+                            project_name=issue_details['project_name'],
+                            ticket_status=format_status('inprogress'),  # Default status for now
+                            ticket_url=ticket_url,
+                            unsubscribe_url=unsubscribe_url
+                        )
+                    
+                    print(f"🚀 SENDING COMMENT EMAIL for issue {comment_data['issueId']}")
+                    print(f"   💬 Commenter: {current_user['name']}")
+                    print(f"   📧 Recipients: {stakeholder_emails}")
+                    
+                    run_async_email(send_comment_notification())
+        except Exception as email_error:
+            print(f"DEBUG: Comment email failed: {str(email_error)}")
         
         return {
             "comment": {
