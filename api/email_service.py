@@ -83,6 +83,7 @@ class EmailService:
         reporter_name: str,
         reporter_email: str,
         ticket_url: str,
+        unsubscribe_url: str = None,
         template_id: int = 10619  # Template ID for ticket assignment
     ) -> bool:
         """Send ticket assignment notification"""
@@ -90,17 +91,17 @@ class EmailService:
         receivers = [{"email": assignee_email, "name": assignee_name}]
         replacements = [{
             "senderVariant": "1",
-            "assignee_name": assignee_name,
-            "ticket_id": str(ticket_id),
-            "ticket_title": ticket_title,
-            "ticket_description": ticket_description,
-            "ticket_type": ticket_type,
+            "assigneeName": assignee_name,
+            "ticketId": str(ticket_id),
+            "ticketTitle": ticket_title,
+            "ticketDescription": ticket_description,
+            "ticketType": ticket_type,
             "priority": priority,
-            "project_name": project_name,
-            "reporter_name": reporter_name,
-            "reporter_email": reporter_email,
-            "ticket_url": ticket_url,
-            "unsubscribe_url": f"{ticket_url}/unsubscribe"
+            "projectName": project_name,
+            "reporterName": reporter_name,
+            "reporterEmail": reporter_email,
+            "ticketUrl": ticket_url,
+            "unsubscribeUrl": unsubscribe_url or f"{ticket_url}/unsubscribe"
         }]
         
         return await self.send_template_email(template_id, receivers, replacements)
@@ -116,6 +117,7 @@ class EmailService:
         project_name: str,
         updated_by_name: str,
         ticket_url: str,
+        unsubscribe_url: str = None,
         template_id: int = 10620  # Template ID for status change
     ) -> bool:
         """Send ticket status change notification"""
@@ -126,15 +128,15 @@ class EmailService:
         # Create a single replacement object for all variables
         replacement_data = {
             "senderVariant": "1",
-            "user_name": user_names[0] if user_names else "User",
-            "ticket_id": str(ticket_id),
-            "ticket_title": ticket_title,
-            "old_status": old_status,
-            "new_status": new_status,
-            "project_name": project_name,
-            "updated_by_name": updated_by_name,
-            "ticket_url": ticket_url,
-            "unsubscribe_url": f"{ticket_url}/unsubscribe"
+            "userName": user_names[0] if user_names else "User",
+            "ticketId": str(ticket_id),
+            "ticketTitle": ticket_title,
+            "oldStatus": old_status,
+            "newStatus": new_status,
+            "projectName": project_name,
+            "updatedByName": updated_by_name,
+            "ticketUrl": ticket_url,
+            "unsubscribeUrl": unsubscribe_url or f"{ticket_url}/unsubscribe"
         }
         replacements = [replacement_data]
         
@@ -167,19 +169,19 @@ class EmailService:
         
         for user_name in notification_names:
             replacements.append({
-                "user_name": user_name,
-                "ticket_id": ticket_id,
-                "ticket_title": ticket_title,
-                "old_assignee_name": old_assignee_name,
-                "old_assignee_email": old_assignee_email,
-                "new_assignee_name": new_assignee_name,
-                "new_assignee_email": new_assignee_email,
-                "changed_by_name": changed_by_name,
-                "project_name": project_name,
+                "userName": user_name,
+                "ticketId": ticket_id,
+                "ticketTitle": ticket_title,
+                "oldAssigneeName": old_assignee_name,
+                "oldAssigneeEmail": old_assignee_email,
+                "newAssigneeName": new_assignee_name,
+                "newAssigneeEmail": new_assignee_email,
+                "changedByName": changed_by_name,
+                "projectName": project_name,
                 "priority": priority,
-                "ticket_type": ticket_type,
-                "ticket_url": ticket_url,
-                "unsubscribe_url": f"{ticket_url}/unsubscribe"
+                "ticketType": ticket_type,
+                "ticketUrl": ticket_url,
+                "unsubscribeUrl": unsubscribe_url or f"{ticket_url}/unsubscribe"
             })
         
         return await self.send_template_email(template_id, receivers, replacements)
@@ -206,17 +208,17 @@ class EmailService:
         
         for user_name in notification_names:
             replacements.append({
-                "user_name": user_name,
-                "ticket_id": ticket_id,
-                "ticket_title": ticket_title,
-                "commenter_name": commenter_name,
-                "commenter_initials": commenter_initials,
-                "comment_content": comment_content,
-                "comment_time": comment_time,
-                "project_name": project_name,
-                "ticket_status": ticket_status,
-                "ticket_url": ticket_url,
-                "unsubscribe_url": f"{ticket_url}/unsubscribe"
+                "userName": user_name,
+                "ticketId": ticket_id,
+                "ticketTitle": ticket_title,
+                "commenterName": commenter_name,
+                "commenterInitials": commenter_initials,
+                "commentContent": comment_content,
+                "commentTime": comment_time,
+                "projectName": project_name,
+                "ticketStatus": ticket_status,
+                "ticketUrl": ticket_url,
+                "unsubscribeUrl": unsubscribe_url or f"{ticket_url}/unsubscribe"
             })
         
         return await self.send_template_email(template_id, receivers, replacements)
